@@ -32,8 +32,8 @@ export default function ContactForm() {
               {
                 icon: Mail,
                 title: "Email",
-                desc: "hello@example.com",
-                href: "mailto:hello@example.com",
+                desc: "sofi.sidik12@gmail.com",
+                href: "mailto:sofi.sidik12@gmail.com",
               },
               {
                 icon: MessageSquare,

@@ -51,10 +51,10 @@ export default function Hero() {
             🚀 Lihat Project
           </a>
           <a
-            href="#contact"
+            href="https://drive.google.com/file/d/1Kl4eFowMchY3KTdTM3Idiju6yoc9PIdo/view?usp=sharing"
             className="inline-flex items-center justify-center gap-2 px-8 py-3 text-base font-semibold rounded-xl border-2 border-sky-500 text-sky-500 hover:bg-sky-500 hover:text-white dark:border-sky-400 dark:text-sky-400 dark:hover:bg-sky-500 dark:hover:text-white transition-all duration-200"
           >
-            💬 Mari Ngobrol
+            📄 Download CV
           </a>
         </motion.div>
       </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Instagram, Github, Linkedin, MapPin, Coffee, GraduationCap } from "lucide-react";
+import { Instagram, Github, Linkedin, MapPin, Coffee, GraduationCap, Book } from "lucide-react";
 import Image from "next/image";
 
 const socialLinks = [
@@ -23,6 +23,12 @@ const socialLinks = [
     label: "Instagram",
     icon: Instagram,
     color: "hover:bg-pink-500 hover:text-white",
+  },
+  {
+    href: "https://medium.com/@sofi.sidik12",
+    label: "Blog",
+    icon: Book,
+    color: "hover:bg-purple-500 hover:text-white",
   },
 ];
 

@@ -11,7 +11,7 @@ const skillGroups = [
   {
     category: "Backend",
     emoji: "⚙️",
-    skills: ["Golang", "Node.js", "REST API", "PostgreSQL", "Docker"],
+    skills: ["Golang", "Node.js", "Laravel", "MySQL", "PostgreSQL", "Redis", "Docker", "Kafka"],
   },
   {
     category: "Emerging Tech",
