@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Code2 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { cn } from "@/lib/utils";
@@ -19,7 +18,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -55,29 +54,25 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="md:hidden backdrop-blur-md bg-white/95 dark:bg-slate-950/95 border-b border-slate-200/50 dark:border-slate-800/50"
-          >
-            <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-3">
-              {navLinks.map((link) => (
-                <a key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-sky-500 py-2 transition-colors">
-                  {link.label}
-                </a>
-              ))}
-              <a href="#contact" onClick={() => setMobileOpen(false)} className="mt-2 text-center px-5 py-2.5 text-sm font-semibold rounded-xl bg-sky-500 hover:bg-sky-600 text-white transition-colors">
-                Mari Ngobrol
-              </a>
-            </div>
-          </motion.div>
+      {/* Fix 3 & 4: Mobile Menu — CSS transition, tanpa Framer Motion */}
+      <div
+        className={cn(
+          "md:hidden overflow-hidden transition-all duration-200 ease-in-out",
+          "backdrop-blur-md bg-white/95 dark:bg-slate-950/95 border-b border-slate-200/50 dark:border-slate-800/50",
+          mobileOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
         )}
-      </AnimatePresence>
+      >
+        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-3">
+          {navLinks.map((link) => (
+            <a key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-sky-500 py-2 transition-colors">
+              {link.label}
+            </a>
+          ))}
+          <a href="#contact" onClick={() => setMobileOpen(false)} className="mt-2 text-center px-5 py-2.5 text-sm font-semibold rounded-xl bg-sky-500 hover:bg-sky-600 text-white transition-colors">
+            Mari Ngobrol
+          </a>
+        </div>
+      </div>
     </header>
   );
 }

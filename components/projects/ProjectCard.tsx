@@ -1,7 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ExternalLink, Github, ArrowUpRight } from "lucide-react";
+import { Github, ArrowUpRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export interface Project {
@@ -18,14 +17,8 @@ export interface Project {
 
 export default function ProjectCard({ project }: { project: Project }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5 }}
-      whileHover={{ y: -6, transition: { duration: 0.2 } }}
-      className="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-sky-500/10 transition-all duration-300 flex flex-col"
-    >
+    // CSS hover transition menggantikan whileHover Framer Motion
+    <div className="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-sky-500/10 hover:-translate-y-1.5 transition-all duration-300 flex flex-col">
       {/* Gradient top bar */}
       <div className={`h-1.5 w-full bg-gradient-to-r ${project.gradientFrom} ${project.gradientTo}`} />
 
@@ -62,6 +55,6 @@ export default function ProjectCard({ project }: { project: Project }) {
           </a>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

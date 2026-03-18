@@ -19,7 +19,7 @@ export default function ContactForm() {
     <section id="contact" className="py-24 px-4 sm:px-6 lg:px-8 bg-slate-100/50 dark:bg-slate-900/30">
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="text-center mb-16">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.35 }} className="text-center mb-16">
           <span className="text-sky-500 font-semibold text-sm uppercase tracking-widest">Jangan Sungkan</span>
           <h2 className="font-quicksand text-4xl sm:text-5xl font-bold text-slate-900 dark:text-slate-50 mt-2">Mari Ngobrol! 👋</h2>
           <p className="mt-4 text-slate-500 dark:text-slate-400 max-w-xl mx-auto">Punya project seru, tawaran kolaborasi, atau sekadar mau say hi? Saya selalu terbuka untuk ngobrol!</p>
@@ -27,7 +27,7 @@ export default function ContactForm() {
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 items-start">
           {/* Left side: info cards */}
-          <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="lg:col-span-2 space-y-4">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.35 }} className="lg:col-span-2 space-y-4">
             {[
               {
                 icon: Mail,
@@ -64,20 +64,16 @@ export default function ContactForm() {
           </motion.div>
 
           {/* Right side: form */}
-          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.1 }} className="lg:col-span-3">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.35, delay: 0.07 }} className="lg:col-span-3">
             {submitted ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 h-full gap-4"
-              >
+              <div className="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 h-full gap-4">
                 <CheckCircle2 className="w-16 h-16 text-sky-500" />
                 <h3 className="font-quicksand text-2xl font-bold text-slate-900 dark:text-slate-50">Pesan Terkirim! 🎉</h3>
                 <p className="text-slate-500 dark:text-slate-400">Makasih udah ngabarin! Saya akan segera balas pesan kamu.</p>
                 <button onClick={() => setSubmitted(false)} className="mt-2 text-sm text-sky-500 hover:text-sky-600 font-medium">
                   Kirim pesan lain →
                 </button>
-              </motion.div>
+              </div>
             ) : (
               <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 space-y-5 shadow-sm">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

@@ -38,14 +38,14 @@ export default function About() {
     <section id="about" className="py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="text-center mb-16">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.35 }} className="text-center mb-16">
           <span className="text-sky-500 font-semibold text-sm uppercase tracking-widest">Kenalan Dulu</span>
           <h2 className="font-quicksand text-4xl sm:text-5xl font-bold text-slate-900 dark:text-slate-50 mt-2">Tentang Saya</h2>{" "}
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Profile Image Placeholder */}
-          <motion.div initial={{ opacity: 0, x: -40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="flex justify-center lg:justify-end">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }} className="flex justify-center lg:justify-end">
             <div className="relative w-64 h-64 sm:w-80 sm:h-80">
               {/* Decorative ring */}
               <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-sky-400 to-blue-600 rotate-6 opacity-30" />
@@ -75,10 +75,10 @@ export default function About() {
           </motion.div>
 
           {/* Text Content */}
-          <motion.div initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }} className="space-y-5">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.07 }} className="space-y-5">
             <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
               <MapPin className="w-4 h-4 text-sky-500" />
-              <span>Tegal, Jawa Tengah 🇮🇩</span>
+              <span>Brebes, Jawa Tengah 🇮🇩</span>
             </div>
 
             <div>

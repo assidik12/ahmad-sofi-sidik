@@ -5,6 +5,7 @@ import Skills from "@/components/skills/Skills";
 import Projects from "@/components/projects/Projects";
 import ContactForm from "@/components/contact/ContactForm";
 import Footer from "@/components/footer/Footer";
+import Clients from "@/components/client/client";
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
       <About />
       <Skills />
       <Projects />
+      <Clients />
       <ContactForm />
       <Footer />
     </main>

@@ -54,14 +54,15 @@ export default function Projects() {
         {/* Projects Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project, idx) => (
-            <motion.div key={project.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: idx * 0.1 }}>
+            // Wrapper ringan — hanya opacity/y sekali, delay diperpendek
+            <motion.div key={project.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: idx * 0.07 }}>
               <ProjectCard project={project} />
             </motion.div>
           ))}
         </div>
 
         {/* View More */}
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.3 }} className="text-center mt-12">
+        <div className="text-center mt-12">
           <a
             href="https://github.com/assidik12?tab=repositories"
             target="_blank"
@@ -70,7 +71,7 @@ export default function Projects() {
           >
             Lihat Semua di GitHub →
           </a>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
