@@ -1,9 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
-import { Instagram, Github, Linkedin, MapPin, Coffee, GraduationCap, Book } from "lucide-react";
-import Image from "next/image";
+import { Instagram, Github, Linkedin, MapPin, GraduationCap, Book } from "lucide-react";
+
+interface AboutProps {
+  fullName?: string;
+  title?: string;
+  bioAbout?: string;
+  avatarUrl?: string | null;
+  cvUrl?: string | null;
+  loading?: boolean;
+}
 
 const socialLinks = [
   {
@@ -32,108 +39,138 @@ const socialLinks = [
   },
 ];
 
-export default function About() {
-  const [imgError, setImgError] = useState(false);
+const DEFAULT_BIO = `Halo! Kenalin gue Sidik, IT student di UBSI Tegal yang part-time jadi Software Engineer. TBH, buat gue ngoding tuh bukan cuma sekadar ngetik syntax doang, tapi lebih ke cara gue nge-solve masalah di real life sambil ngekspresiin diri. It's giving ✨problem solver✨ energy, you know?
+
+Gue suka banget nge-deep dive ke hal-hal yang agak mind-blowing: mulai dari Web3 & Blockchain, nyambungin physical devices pake IoT, sampe nge-explore Computer Vision buat bikin sesuatu yang beneran impactful. Agak nerd sih, but lowkey seru abis! 🚀
+
+Kalo lagi chill & touch grass (alias nggak di depan laptop), lo bakal nemuin gue lagi nyeduh kopi ☕ sambil scrolling tech updates, atau ngerjain side project yang literally nggak tau kapan kelarnya. No cap! 😄`;
+
+export default function About({
+  fullName = "Ahmad Sofi Sidik",
+  title = "Software Engineer · Web3 · IoT · Computer Vision",
+  bioAbout = DEFAULT_BIO,
+  loading = false,
+}: AboutProps) {
+  // Parse narrative into paragraphs
+  const paragraphs = bioAbout ? bioAbout.split(/\n+/) : [];
+
+  if (loading) {
+    return (
+      <section id="about" className="py-24 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Header Skeleton */}
+          <div className="text-center mb-16 space-y-3 animate-pulse">
+            <div className="h-4 w-28 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto" />
+            <div className="h-10 w-48 bg-slate-200 dark:bg-slate-800 rounded-xl mx-auto" />
+          </div>
+
+          {/* Description Skeleton */}
+          <div className="space-y-6 animate-pulse max-w-3xl mx-auto">
+            <div className="h-4 w-36 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+            <div className="space-y-2">
+              <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+              <div className="h-4 w-72 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+            </div>
+            <div className="space-y-3">
+              <div className="h-4 w-full bg-slate-200 dark:bg-slate-800 rounded-lg" />
+              <div className="h-4 w-full bg-slate-200 dark:bg-slate-800 rounded-lg" />
+              <div className="h-4 w-4/5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+            </div>
+            <div className="h-16 w-full bg-slate-200 dark:bg-slate-800 rounded-xl" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section id="about" className="py-24 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
+    <section id="about" className="py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="max-w-4xl mx-auto">
         {/* Section Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.35 }} className="text-center mb-16">
-          <span className="text-sky-500 font-semibold text-sm uppercase tracking-widest">Kenalan Dulu</span>
-          <h2 className="font-quicksand text-4xl sm:text-5xl font-bold text-slate-900 dark:text-slate-50 mt-2">Tentang Saya</h2>{" "}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-16"
+        >
+          <span className="text-sky-500 font-semibold text-sm uppercase tracking-widest bg-sky-50 dark:bg-sky-950/50 px-3.5 py-1 rounded-full border border-sky-100 dark:border-sky-900/30">
+            Kenalan Dulu
+          </span>
+          <h2 className="font-quicksand text-4xl sm:text-5xl font-bold text-slate-900 dark:text-slate-50 mt-4">
+            Tentang Saya
+          </h2>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Profile Image Placeholder */}
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }} className="flex justify-center lg:justify-end">
-            <div className="relative w-64 h-64 sm:w-80 sm:h-80">
-              {/* Decorative ring */}
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-sky-400 to-blue-600 rotate-6 opacity-30" />
-              {/* Main gradient box */}
-              <div className="relative w-full h-full rounded-3xl bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-sky-500/30 overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.2),transparent)]" />
-                {imgError ? (
-                  <span className="text-7xl select-none">👨‍💻</span>
-                ) : (
-                  <Image
-                    src="/placeholder-profile.png"
-                    alt="Foto Profil Ahmad Sofi Sidik"
-                    fill
-                    className="rounded-3xl object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    onError={() => setImgError(true)}
-                    priority
-                  />
-                )}
-              </div>
-              {/* Floating badge */}
-              <div className="absolute -bottom-4 -right-4 bg-white dark:bg-slate-800 rounded-2xl px-4 py-2 shadow-lg border border-slate-100 dark:border-slate-700 flex items-center gap-2">
-                <Coffee className="w-4 h-4 text-amber-500" />
-                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Open to Work</span>
-              </div>
-            </div>
-          </motion.div>
+        {/* Text Content */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.55, delay: 0.1 }}
+          className="space-y-8 max-w-3xl mx-auto"
+        >
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
+            <MapPin className="w-4 h-4 text-sky-500" />
+            <span className="font-medium">Brebes, Jawa Tengah 🇮🇩</span>
+          </div>
 
-          {/* Text Content */}
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.07 }} className="space-y-5">
-            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
-              <MapPin className="w-4 h-4 text-sky-500" />
-              <span>Brebes, Jawa Tengah 🇮🇩</span>
-            </div>
+          <div>
+            <h3 className="font-quicksand text-3xl font-extrabold text-slate-900 dark:text-slate-50">
+              {fullName}
+            </h3>
+            <p className="text-sky-500 dark:text-sky-400 font-semibold text-sm mt-1 uppercase tracking-wide">
+              {title}
+            </p>
+          </div>
 
+          {/* Rich Narrative Paragraphs */}
+          <div className="space-y-4 text-slate-700 dark:text-slate-300 leading-relaxed text-base">
+            {paragraphs.map((para, i) => (
+              <p key={i}>{para}</p>
+            ))}
+          </div>
+
+          {/* Education Card */}
+          <div className="flex items-start gap-4 p-4 rounded-2xl bg-sky-50/50 dark:bg-sky-900/10 border border-sky-100/50 dark:border-sky-900/30 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow duration-300">
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-950 flex items-center justify-center border border-sky-200/30 dark:border-sky-900/30">
+              <GraduationCap className="w-5.5 h-5.5 text-sky-500 dark:text-sky-400" />
+            </div>
             <div>
-              <h3 className="font-quicksand text-2xl font-bold text-slate-900 dark:text-slate-50">Ahmad Sofi Sidik</h3>
-              <p className="text-sky-500 font-medium text-sm mt-0.5">Software Engineer · Web3 · IoT · Computer Vision</p>
+              <p className="text-xs font-bold text-sky-500 dark:text-sky-400 uppercase tracking-wider mb-0.5">
+                Pendidikan
+              </p>
+              <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                Universitas Bina Sarana Informatika
+              </p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                Teknologi Informasi · Kota Tegal
+              </p>
             </div>
+          </div>
 
-            <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-base">
-              Hai! Panggil saya <span className="font-semibold text-slate-900 dark:text-slate-100">Sidik</span>. Saya mahasiswa <span className="font-semibold text-slate-900 dark:text-slate-100">Teknologi Informasi</span> di{" "}
-              <span className="font-semibold text-slate-900 dark:text-slate-100">Universitas Bina Sarana Informatika (UBSI) Kota Tegal</span> yang juga aktif mengembangkan diri sebagai Software Engineer. Buat saya, ngoding bukan sekadar
-              kerjaan — itu cara saya berekspresi dan memecahkan masalah nyata.
+          {/* Social Links */}
+          <div className="pt-2">
+            <p className="text-sm font-bold text-slate-400 dark:text-slate-500 mb-3 uppercase tracking-wider">
+              Temukan saya di:
             </p>
-
-            <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-base">
-              Saya suka banget ngulik hal-hal yang biasanya dianggap ribet: dari ekosistem <span className="text-sky-500 font-medium">Web3 & Blockchain</span>, nyambungin perangkat fisik lewat{" "}
-              <span className="text-sky-500 font-medium">IoT</span>, sampai nge-eksperimen dengan <span className="text-sky-500 font-medium">Computer Vision</span> buat hal-hal yang impactful.
-            </p>
-
-            <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-base">
-              Kalau lagi ga di depan laptop, biasanya saya lagi nyeduh kopi ☕ sambil baca artikel tech, atau ngutak-atik project sampingan yang entah kapan selesainya. 😄
-            </p>
-
-            {/* Education Card */}
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-800/50">
-              <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center">
-                <GraduationCap className="w-5 h-5 text-sky-500" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-sky-500 uppercase tracking-wide mb-0.5">Pendidikan</p>
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Universitas Bina Sarana Informatika</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Teknologi Informasi · Kota Tegal</p>
-              </div>
+            <div className="flex flex-wrap gap-3">
+              {socialLinks.map(({ href, label, icon: Icon, color }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm ${color}`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </a>
+              ))}
             </div>
-
-            {/* Social Links */}
-            <div className="pt-2">
-              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-3">Temukan saya di:</p>
-              <div className="flex gap-3">
-                {socialLinks.map(({ href, label, icon: Icon, color }) => (
-                  <a
-                    key={label}
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={label}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm font-medium transition-all duration-200 ${color}`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </a>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
