@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   Lock, Eye, EyeOff, Save, Upload, Plus, Trash2, Edit2,
-  ExternalLink, LogOut, CheckCircle, AlertCircle, Loader2, Sparkles, Folder, User
+  ExternalLink, LogOut, CheckCircle, AlertCircle, Loader2, Sparkles, Folder, User, Award
 } from "lucide-react";
 import { type Project } from "@/components/projects/ProjectCard";
+import { type Certification } from "@/components/certifications/Certifications";
 
 interface Toast {
   type: "success" | "error" | "info";
@@ -19,7 +20,7 @@ export default function AdminDashboard() {
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState("");
 
-  const [activeTab, setActiveTab] = useState<"profile" | "projects">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "projects" | "certifications">("profile");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
 
@@ -47,6 +48,21 @@ export default function AdminDashboard() {
   const [isEditingProject, setIsEditingProject] = useState(false);
   const [showProjectForm, setShowProjectForm] = useState(false);
 
+  // Certifications States
+  const [certifications, setCertifications] = useState<Certification[]>([]);
+  const [certForm, setCertForm] = useState({
+    id: "",
+    name: "",
+    description: "",
+    date: "",
+    institution: "",
+    fileUrl: "",
+    articleUrl: "",
+  });
+  const [isEditingCert, setIsEditingCert] = useState(false);
+  const [showCertForm, setShowCertForm] = useState(false);
+  const [uploadingCert, setUploadingCert] = useState(false);
+
   // File upload state
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCv, setUploadingCv] = useState(false);
@@ -62,6 +78,7 @@ export default function AdminDashboard() {
     if (!isAuthenticated) return;
     fetchProfile();
     fetchProjects();
+    fetchCertifications();
   }, [isAuthenticated]);
 
   // Autohide toast after 4 seconds
@@ -151,6 +168,31 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchCertifications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("certifications")
+        .select("*")
+        .order("id", { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        setCertifications(data.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          description: c.description,
+          date: c.date,
+          institution: c.institution,
+          fileUrl: c.file_url || "",
+          articleUrl: c.article_url || "",
+        })));
+      }
+    } catch (err: any) {
+      showToast(`Gagal memuat sertifikasi: ${err.message}`, "error");
+    }
+  };
+
   const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -199,13 +241,14 @@ export default function AdminDashboard() {
   };
 
   // Upload file helper
-  const uploadFile = async (e: React.ChangeEvent<HTMLInputElement>, type: "avatar" | "cv") => {
+  const uploadFile = async (e: React.ChangeEvent<HTMLInputElement>, type: "avatar" | "cv" | "cert") => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const isAvatar = type === "avatar";
-    const setUploading = isAvatar ? setUploadingAvatar : setUploadingCv;
-    const folder = isAvatar ? "avatars" : "cv";
+    const isCert = type === "cert";
+    const setUploading = isCert ? setUploadingCert : (isAvatar ? setUploadingAvatar : setUploadingCv);
+    const folder = isCert ? "certifications" : (isAvatar ? "avatars" : "cv");
     const allowedTypes = isAvatar 
       ? ["image/jpeg", "image/png", "image/webp", "image/gif"] 
       : ["application/pdf"];
@@ -233,7 +276,10 @@ export default function AdminDashboard() {
         .from("portfolio-assets")
         .getPublicUrl(filePath);
 
-      if (isAvatar) {
+      if (isCert) {
+        setCertForm({ ...certForm, fileUrl: data.publicUrl });
+        showToast("File sertifikasi berhasil diunggah!", "success");
+      } else if (isAvatar) {
         setAvatarUrl(data.publicUrl);
         showToast("Foto profil berhasil diunggah!", "success");
       } else {
@@ -348,6 +394,77 @@ export default function AdminDashboard() {
       liveUrl: "",
     });
     setIsEditingProject(false);
+  };
+
+  // Certifications handlers
+  const saveCert = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const dbPayload = {
+        name: certForm.name,
+        description: certForm.description,
+        date: certForm.date,
+        institution: certForm.institution,
+        file_url: certForm.fileUrl || null,
+        article_url: certForm.articleUrl || null,
+      };
+
+      let error;
+      if (isEditingCert && certForm.id) {
+        const result = await supabase.from("certifications").update(dbPayload).eq("id", certForm.id);
+        error = result.error;
+      } else {
+        const result = await supabase.from("certifications").insert(dbPayload);
+        error = result.error;
+      }
+
+      if (error) throw error;
+
+      showToast(isEditingCert ? "Sertifikasi diupdate!" : "Sertifikasi ditambahkan!", "success");
+      setShowCertForm(false);
+      setIsEditingCert(false);
+      resetCertForm();
+      fetchCertifications();
+    } catch (err: any) {
+      showToast(`Gagal menyimpan sertifikasi: ${err.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteCert = async (id: number) => {
+    if (!confirm("Hapus sertifikasi ini?")) return;
+    try {
+      setLoading(true);
+      const { error } = await supabase.from("certifications").delete().eq("id", id);
+      if (error) throw error;
+      showToast("Sertifikasi dihapus!", "success");
+      fetchCertifications();
+    } catch (err: any) {
+      showToast(`Gagal menghapus sertifikasi: ${err.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditCertClick = (c: Certification) => {
+    setCertForm({
+      id: c.id.toString(),
+      name: c.name,
+      description: c.description,
+      date: c.date,
+      institution: c.institution,
+      fileUrl: c.fileUrl || "",
+      articleUrl: c.articleUrl || "",
+    });
+    setIsEditingCert(true);
+    setShowCertForm(true);
+  };
+
+  const resetCertForm = () => {
+    setCertForm({ id: "", name: "", description: "", date: "", institution: "", fileUrl: "", articleUrl: "" });
+    setIsEditingCert(false);
   };
 
   if (!isAuthenticated) {
@@ -471,6 +588,16 @@ export default function AdminDashboard() {
             }`}
           >
             <Folder className="w-4 h-4" /> Kelola Proyek
+          </button>
+          <button
+            onClick={() => setActiveTab("certifications")}
+            className={`flex items-center gap-2 px-5 py-3 border-b-2 font-bold text-sm transition-all ${
+              activeTab === "certifications"
+                ? "border-sky-500 text-sky-500"
+                : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            }`}
+          >
+            <Award className="w-4 h-4" /> Sertifikasi
           </button>
         </div>
 
@@ -865,6 +992,163 @@ export default function AdminDashboard() {
                   <Folder className="w-12 h-12 mx-auto stroke-1" />
                   <p className="font-semibold text-sm">Belum ada proyek ditambahkan.</p>
                   <p className="text-xs">Klik 'Proyek Baru' untuk mulai menambahkan proyek!</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* CERTIFICATIONS TAB */}
+        {activeTab === "certifications" && (
+          <div className="space-y-6">
+            {!showCertForm && (
+              <div className="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm">
+                <div>
+                  <h3 className="font-quicksand font-bold text-lg">Daftar Sertifikasi & Penghargaan</h3>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">Koleksi sertifikasi yang ditampilkan di halaman utama.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    resetCertForm();
+                    setShowCertForm(true);
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold shadow-md transition-all hover:scale-105"
+                >
+                  <Plus className="w-4 h-4" /> Tambah Data
+                </button>
+              </div>
+            )}
+
+            {showCertForm && (
+              <form onSubmit={saveCert} className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-6 shadow-sm space-y-6">
+                <h3 className="font-quicksand text-xl font-bold flex items-center gap-2 text-amber-500">
+                  <Award className="w-5 h-5" /> {isEditingCert ? "Edit Sertifikasi" : "Tambah Sertifikasi"}
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Nama Sertifikasi / Penghargaan</label>
+                    <input
+                      type="text"
+                      value={certForm.name}
+                      onChange={(e) => setCertForm({ ...certForm, name: e.target.value })}
+                      required
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-slate-900 dark:text-slate-50 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Tanggal (Bulan/Tahun)</label>
+                    <input
+                      type="text"
+                      value={certForm.date}
+                      onChange={(e) => setCertForm({ ...certForm, date: e.target.value })}
+                      required
+                      placeholder="Contoh: 2024-05"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-slate-900 dark:text-slate-50 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Nama Instansi</label>
+                  <input
+                    type="text"
+                    value={certForm.institution}
+                    onChange={(e) => setCertForm({ ...certForm, institution: e.target.value })}
+                    required
+                    placeholder="Contoh: Amazon Web Services"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-slate-900 dark:text-slate-50 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Deskripsi</label>
+                  <textarea
+                    value={certForm.description}
+                    onChange={(e) => setCertForm({ ...certForm, description: e.target.value })}
+                    required
+                    rows={3}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-slate-900 dark:text-slate-50 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border border-slate-200/50 dark:border-slate-800/50 p-5 rounded-2xl bg-slate-50/50 dark:bg-slate-950/50">
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Unggah File (PDF/Gambar)</label>
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          id="cert-file"
+                          onChange={(e) => uploadFile(e, "cert")}
+                          className="hidden"
+                          disabled={uploadingCert}
+                        />
+                        <label
+                          htmlFor="cert-file"
+                          className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-amber-500 text-slate-500 cursor-pointer transition-all font-semibold text-sm"
+                        >
+                          {uploadingCert ? <><Loader2 className="w-4 h-4 animate-spin" /> Mengunggah...</> : <><Upload className="w-4 h-4" /> Pilih File Sertifikat</>}
+                        </label>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Atau URL Eksternal</label>
+                      <input
+                        type="text"
+                        value={certForm.fileUrl}
+                        onChange={(e) => setCertForm({ ...certForm, fileUrl: e.target.value })}
+                        placeholder="https://..."
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs outline-none focus:border-amber-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Link Artikel (Opsional)</label>
+                    <input
+                      type="url"
+                      value={certForm.articleUrl}
+                      onChange={(e) => setCertForm({ ...certForm, articleUrl: e.target.value })}
+                      placeholder="https://..."
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-4 justify-end">
+                  <button type="button" onClick={() => { resetCertForm(); setShowCertForm(false); }} className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 font-bold transition-all text-sm">Batal</button>
+                  <button type="submit" disabled={loading} className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold transition-all disabled:opacity-50 text-sm">
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Simpan
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {certifications.map((cert) => (
+                <div key={cert.id} className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-amber-500 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20">
+                    <Award className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="font-quicksand font-bold text-base truncate">{cert.name}</h4>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => handleEditCertClick(cert)} className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 transition-colors"><Edit2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => deleteCert(cert.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                    </div>
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">{cert.institution} • {cert.date}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-2">{cert.description}</p>
+                  </div>
+                </div>
+              ))}
+              {certifications.length === 0 && (
+                <div className="col-span-2 py-16 text-center text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl space-y-2">
+                  <Award className="w-12 h-12 mx-auto stroke-1" />
+                  <p className="font-semibold text-sm">Belum ada sertifikasi ditambahkan.</p>
                 </div>
               )}
             </div>

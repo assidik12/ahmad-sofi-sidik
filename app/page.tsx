@@ -6,6 +6,7 @@ import Hero from "@/components/hero/Hero";
 import About from "@/components/about/About";
 import Skills from "@/components/skills/Skills";
 import Projects from "@/components/projects/Projects";
+import Certifications, { type Certification } from "@/components/certifications/Certifications";
 import ContactForm from "@/components/contact/ContactForm";
 import Footer from "@/components/footer/Footer";
 import Clients from "@/components/client/client";
@@ -25,6 +26,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [certifications, setCertifications] = useState<Certification[]>([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -62,6 +64,25 @@ export default function Home() {
           }));
           setProjects(mappedProjects);
         }
+
+        // Fetch Certifications
+        const { data: certData, error: certError } = await supabase
+          .from("certifications")
+          .select("*")
+          .order("id", { ascending: true });
+
+        if (certData && !certError) {
+          const mappedCerts: Certification[] = certData.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            description: c.description,
+            date: c.date,
+            institution: c.institution,
+            fileUrl: c.file_url || undefined,
+            articleUrl: c.article_url || undefined,
+          }));
+          setCertifications(mappedCerts);
+        }
       } catch (err) {
         console.error("Error fetching data from Supabase:", err);
       } finally {
@@ -92,6 +113,7 @@ export default function Home() {
         loading={loading}
       />
       <Skills />
+      <Certifications certifications={certifications} loading={loading} />
       <Projects projects={projects} loading={loading} />
       <Clients />
       <ContactForm />

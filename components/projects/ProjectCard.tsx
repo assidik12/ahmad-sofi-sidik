@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Github, ArrowUpRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -16,6 +17,10 @@ export interface Project {
 }
 
 export default function ProjectCard({ project }: { project: Project }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const maxLength = 100;
+  const isLong = project.description.length > maxLength;
+
   return (
     // CSS hover transition menggantikan whileHover Framer Motion
     <div className="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-sky-500/10 hover:-translate-y-1.5 transition-all duration-300 flex flex-col">
@@ -30,7 +35,17 @@ export default function ProjectCard({ project }: { project: Project }) {
 
       {/* Description */}
       <div className="px-6 pb-4 flex-1">
-        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{project.description}</p>
+        <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed inline-block">
+          {isExpanded || !isLong ? project.description : `${project.description.slice(0, maxLength)}...`}
+          {isLong && (
+            <button 
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-sky-500 hover:text-sky-600 dark:hover:text-sky-400 font-semibold ml-1 focus:outline-none transition-colors"
+            >
+              {isExpanded ? "Tampilkan lebih sedikit" : "Selengkapnya"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tags */}
