@@ -81,24 +81,47 @@ export default function Hero({
       <div className="max-w-4xl mx-auto text-center space-y-8">
         {/* Profile Avatar with Breathing Glowing Border and Hover Zoom */}
         <div className="flex justify-center animate-[fade-up_0.6s_ease-out_forwards] opacity-0">
-          <div className="relative group">
+          <div className="relative group cursor-pointer" style={{ perspective: '1000px' }}>
             {/* Ambient Background Glow */}
             <div className="absolute -inset-1.5 rounded-full bg-gradient-to-r from-sky-400 to-blue-600 opacity-60 blur-lg transition duration-1000 group-hover:opacity-100 group-hover:duration-300 animate-[pulse_3s_ease-in-out_infinite]" />
             
-            <div className="relative w-44 h-44 md:w-56 md:h-56 rounded-full overflow-hidden border-4 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 shadow-2xl transition-transform duration-500 ease-out group-hover:scale-105 flex items-center justify-center">
-              {finalAvatar ? (
+            <div 
+              className="relative w-44 h-44 md:w-56 md:h-56 rounded-full shadow-2xl transition-all duration-700 ease-out group-hover:[transform:rotateY(180deg)_scale(1.05)]"
+              style={{ transformStyle: 'preserve-3d' }}
+            >
+              {/* Front Side (Main Profile Photo) */}
+              <div 
+                className="absolute inset-0 w-full h-full rounded-full overflow-hidden border-4 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800"
+                style={{ backfaceVisibility: 'hidden' }}
+              >
+                {finalAvatar ? (
+                  <Image
+                    src={finalAvatar}
+                    alt={fullName}
+                    fill
+                    sizes="(max-width: 768px) 176px, 224px"
+                    priority
+                    className="object-cover"
+                    onError={() => setImgError(true)}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full text-7xl select-none animate-[bounce_2s_infinite]">👨‍💻</div>
+                )}
+              </div>
+
+              {/* Back Side (PNG Avatar) */}
+              <div 
+                className="absolute inset-0 w-full h-full rounded-full overflow-hidden border-4 border-white dark:border-slate-900 bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center"
+                style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+              >
                 <Image
-                  src={finalAvatar}
-                  alt={fullName}
+                  src="/android-chrome-512x512.png"
+                  alt="Avatar Illustration"
                   fill
                   sizes="(max-width: 768px) 176px, 224px"
-                  priority
-                  className="object-cover"
-                  onError={() => setImgError(true)}
+                  className="object-cover p-2 scale-110 drop-shadow-xl"
                 />
-              ) : (
-                <div className="text-7xl select-none animate-[bounce_2s_infinite]">👨‍💻</div>
-              )}
+              </div>
             </div>
 
             {/* Glowing Green Dot Status Badge */}

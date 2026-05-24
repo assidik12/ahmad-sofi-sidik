@@ -18,6 +18,39 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Ahmad Sofi Sidik | Software Engineer",
   description: "Portfolio Ahmad Sofi Sidik — Software Engineer dari Universitas Bina Sarana Informatika Kota Tegal, Jurusan Teknologi Informasi. Suka ngulik Web3, IoT, dan Computer Vision.",
+  icons: {
+    icon: [
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  manifest: "/site.webmanifest",
+  openGraph: {
+    title: "Ahmad Sofi Sidik | Software Engineer",
+    description: "Portfolio Ahmad Sofi Sidik — Software Engineer dari Universitas Bina Sarana Informatika Kota Tegal, Jurusan Teknologi Informasi.",
+    url: "https://ahmad-sofi-sidik.vercel.app",
+    siteName: "ahmad-sofi-sidik.vercel.app",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Ahmad Sofi Sidik - Software Engineer Portfolio",
+      },
+    ],
+    locale: "id_ID",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ahmad Sofi Sidik | Software Engineer",
+    description: "Portfolio Ahmad Sofi Sidik — Software Engineer dari Universitas Bina Sarana Informatika Kota Tegal.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -25,7 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="id" suppressHydrationWarning>
       <body className={`${quicksand.variable} ${inter.variable} font-inter antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
+          {children}  
         </ThemeProvider>
       </body>
     </html>
