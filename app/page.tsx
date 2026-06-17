@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Navbar from "@/components/navbar/Navbar";
 import Hero from "@/components/hero/Hero";
 import About from "@/components/about/About";
@@ -10,7 +7,7 @@ import Certifications, { type Certification } from "@/components/certifications/
 import ContactForm from "@/components/contact/ContactForm";
 import Footer from "@/components/footer/Footer";
 import Clients from "@/components/client/client";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 import { type Project } from "@/components/projects/ProjectCard";
 
 interface ProfileData {
@@ -22,76 +19,72 @@ interface ProfileData {
   cv_url: string | null;
 }
 
-export default function Home() {
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [certifications, setCertifications] = useState<Certification[]>([]);
+// Server-side Supabase client (uses NEXT_PUBLIC_ keys — anon key is safe to use server-side too)
+function createServerSupabase() {
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    "https://placeholder-project-id.supabase.co";
+  const supabaseAnonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    "placeholder-anon-key-to-pass-nextjs-build-checks";
+  return createClient(supabaseUrl, supabaseAnonKey);
+}
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
+export default async function Home() {
+  const supabase = createServerSupabase();
 
-        // Fetch Profile (first record)
-        const { data: profileData, error: profileError } = await supabase
-          .from("profile")
-          .select("full_name, title, bio_hero, bio_about, avatar_url, cv_url")
-          .limit(1)
-          .maybeSingle(); // Use maybeSingle to prevent crashing if table is empty
+  // --- Fetch all data in parallel on the server ---
+  const [profileResult, projectsResult, certsResult] = await Promise.allSettled([
+    supabase
+      .from("profile")
+      .select("full_name, title, bio_hero, bio_about, avatar_url, cv_url")
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("projects")
+      .select("id, title, description, tags, emoji, gradient_from, gradient_to, github_url, live_url")
+      .order("id", { ascending: true }),
+    supabase
+      .from("certifications")
+      .select("*")
+      .order("id", { ascending: true }),
+  ]);
 
-        if (profileData && !profileError) {
-          setProfile(profileData);
-        }
+  // --- Parse profile ---
+  const profile: ProfileData | null =
+    profileResult.status === "fulfilled" && profileResult.value.data
+      ? (profileResult.value.data as ProfileData)
+      : null;
 
-        // Fetch Projects
-        const { data: projectsData, error: projectsError } = await supabase
-          .from("projects")
-          .select("id, title, description, tags, emoji, gradient_from, gradient_to, github_url, live_url")
-          .order("id", { ascending: true });
+  // --- Parse projects ---
+  let projects: Project[] = [];
+  if (projectsResult.status === "fulfilled" && projectsResult.value.data) {
+    projects = projectsResult.value.data.map((proj: any) => ({
+      id: proj.id,
+      title: proj.title,
+      description: proj.description,
+      tags: proj.tags || [],
+      emoji: proj.emoji || "🚀",
+      gradientFrom: proj.gradient_from || "from-sky-500",
+      gradientTo: proj.gradient_to || "to-blue-600",
+      githubUrl: proj.github_url || "",
+      liveUrl: proj.live_url || undefined,
+    }));
+  }
 
-        if (projectsData && !projectsError) {
-          const mappedProjects: Project[] = projectsData.map((proj: any) => ({
-            id: proj.id,
-            title: proj.title,
-            description: proj.description,
-            tags: proj.tags || [],
-            emoji: proj.emoji || "🚀",
-            gradientFrom: proj.gradient_from || "from-sky-500",
-            gradientTo: proj.gradient_to || "to-blue-600",
-            githubUrl: proj.github_url || "",
-            liveUrl: proj.live_url || undefined,
-          }));
-          setProjects(mappedProjects);
-        }
-
-        // Fetch Certifications
-        const { data: certData, error: certError } = await supabase
-          .from("certifications")
-          .select("*")
-          .order("id", { ascending: true });
-
-        if (certData && !certError) {
-          const mappedCerts: Certification[] = certData.map((c: any) => ({
-            id: c.id,
-            name: c.name,
-            description: c.description,
-            date: c.date,
-            institution: c.institution,
-            fileUrl: c.file_url || undefined,
-            articleUrl: c.article_url || undefined,
-          }));
-          setCertifications(mappedCerts);
-        }
-      } catch (err) {
-        console.error("Error fetching data from Supabase:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchData();
-  }, []);
+  // --- Parse certifications ---
+  let certifications: Certification[] = [];
+  if (certsResult.status === "fulfilled" && certsResult.value.data) {
+    certifications = certsResult.value.data.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      date: c.date,
+      institution: c.institution,
+      fileUrl: c.file_url || undefined,
+      articleUrl: c.article_url || undefined,
+    }));
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 overflow-x-hidden">
@@ -102,7 +95,7 @@ export default function Home() {
         bioHero={profile?.bio_hero}
         avatarUrl={profile?.avatar_url}
         cvUrl={profile?.cv_url}
-        loading={loading}
+        loading={false}
       />
       <About
         fullName={profile?.full_name}
@@ -110,11 +103,11 @@ export default function Home() {
         bioAbout={profile?.bio_about}
         avatarUrl={profile?.avatar_url}
         cvUrl={profile?.cv_url}
-        loading={loading}
+        loading={false}
       />
       <Skills />
-      <Certifications certifications={certifications} loading={loading} />
-      <Projects projects={projects} loading={loading} />
+      <Certifications certifications={certifications} loading={false} />
+      <Projects projects={projects} loading={false} />
       <Clients />
       <ContactForm />
       <Footer />
