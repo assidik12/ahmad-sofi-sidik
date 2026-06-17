@@ -1,3 +1,6 @@
+// ISR: re-fetch dari Supabase setiap 60 detik di production
+export const revalidate = 60;
+
 import Navbar from "@/components/navbar/Navbar";
 import Hero from "@/components/hero/Hero";
 import About from "@/components/about/About";
