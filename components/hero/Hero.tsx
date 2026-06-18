@@ -125,7 +125,7 @@ export default function Hero({
             </div>
 
             {/* Glowing Green Dot Status Badge */}
-            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 dark:border-emerald-500/30 rounded-full px-3.5 py-1 text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shadow-md backdrop-blur-md transition-all duration-300 group-hover:translate-y-[-2px] group-hover:shadow-emerald-500/10 group-hover:shadow-lg">
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20 dark:border-emerald-500/30 rounded-full px-3.5 py-1 text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shadow-md backdrop-blur-md transition-all duration-300 group-hover:translate-y-[-2px] group-hover:shadow-emerald-500/10 group-hover:shadow-lg">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -137,8 +137,8 @@ export default function Hero({
 
         {/* Greeting Badge */}
         <div className="flex justify-center animate-[fade-up_0.6s_ease-out_0.15s_forwards] opacity-0">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-100/80 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400 text-sm font-semibold border border-sky-200/50 dark:border-sky-800/50 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:bg-sky-200/50 dark:hover:bg-sky-900/60">
-            <Sparkles className="w-4 h-4 animate-spin-slow text-amber-500" />
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-100/80 dark:bg-sky-900/40 text-sky-800 dark:text-sky-300 text-sm font-semibold border border-sky-200/50 dark:border-sky-800/50 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:bg-sky-200/50 dark:hover:bg-sky-900/60">
+            <Sparkles className="w-4 h-4 animate-spin-slow text-amber-600 dark:text-amber-500" />
             Halo, perkenalkan — saya {fullName.split(" ")[2] || fullName.split(" ")[0]}! 👋
           </span>
         </div>

@@ -14,6 +14,7 @@ export interface Project {
   gradientTo: string;
   githubUrl: string;
   liveUrl?: string;
+  sortOrder?: number;
 }
 
 export default function ProjectCard({ project }: { project: Project }) {

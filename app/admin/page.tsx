@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   Lock, Eye, EyeOff, Save, Upload, Plus, Trash2, Edit2,
-  ExternalLink, LogOut, CheckCircle, AlertCircle, Loader2, Sparkles, Folder, User, Award
+  ExternalLink, LogOut, CheckCircle, AlertCircle, Loader2, Sparkles, Folder, User, Award, MessageSquare, Mail,
+  ChevronUp, ChevronDown
 } from "lucide-react";
 import { type Project } from "@/components/projects/ProjectCard";
 import { type Certification } from "@/components/certifications/Certifications";
@@ -20,7 +21,7 @@ export default function AdminDashboard() {
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState("");
 
-  const [activeTab, setActiveTab] = useState<"profile" | "projects" | "certifications">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "projects" | "certifications" | "messages">("profile");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
 
@@ -63,6 +64,9 @@ export default function AdminDashboard() {
   const [showCertForm, setShowCertForm] = useState(false);
   const [uploadingCert, setUploadingCert] = useState(false);
 
+  // Messages State
+  const [messages, setMessages] = useState<any[]>([]);
+
   // File upload state
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCv, setUploadingCv] = useState(false);
@@ -79,6 +83,7 @@ export default function AdminDashboard() {
     fetchProfile();
     fetchProjects();
     fetchCertifications();
+    fetchMessages();
   }, [isAuthenticated]);
 
   // Autohide toast after 4 seconds
@@ -145,6 +150,7 @@ export default function AdminDashboard() {
       const { data, error } = await supabase
         .from("projects")
         .select("*")
+        .order("sort_order", { ascending: true })
         .order("id", { ascending: true });
 
       if (error) throw error;
@@ -160,6 +166,7 @@ export default function AdminDashboard() {
           gradientTo: p.gradient_to || "to-blue-600",
           githubUrl: p.github_url || "",
           liveUrl: p.live_url || undefined,
+          sortOrder: p.sort_order || 0,
         }));
         setProjects(mapped);
       }
@@ -173,6 +180,7 @@ export default function AdminDashboard() {
       const { data, error } = await supabase
         .from("certifications")
         .select("*")
+        .order("sort_order", { ascending: true })
         .order("id", { ascending: true });
 
       if (error) throw error;
@@ -186,10 +194,39 @@ export default function AdminDashboard() {
           institution: c.institution,
           fileUrl: c.file_url || "",
           articleUrl: c.article_url || "",
+          sortOrder: c.sort_order || 0,
         })));
       }
     } catch (err: any) {
       showToast(`Gagal memuat sertifikasi: ${err.message}`, "error");
+    }
+  };
+  const fetchMessages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("contact_messages")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      if (data) setMessages(data);
+    } catch (err: any) {
+      showToast(`Gagal memuat pesan: ${err.message}`, "error");
+    }
+  };
+
+  const deleteMessage = async (id: number) => {
+    if (!confirm("Hapus pesan ini?")) return;
+    try {
+      setLoading(true);
+      const { error } = await supabase.from("contact_messages").delete().eq("id", id);
+      if (error) throw error;
+      showToast("Pesan dihapus!", "success");
+      fetchMessages();
+    } catch (err: any) {
+      showToast(`Gagal menghapus pesan: ${err.message}`, "error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -379,6 +416,34 @@ export default function AdminDashboard() {
     });
     setIsEditingProject(true);
     setShowProjectForm(true);
+  };
+
+  const moveOrder = async (table: "projects" | "certifications", index: number, direction: "up" | "down") => {
+    const list = table === "projects" ? projects : certifications;
+    if ((direction === "up" && index === 0) || (direction === "down" && index === list.length - 1)) return;
+
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    const currentItem = list[index];
+    const swapItem = list[swapIndex];
+
+    try {
+      setLoading(true);
+      
+      const currentOrder = currentItem.sortOrder || index;
+      const swapOrder = swapItem.sortOrder || swapIndex;
+
+      await Promise.all([
+        supabase.from(table).update({ sort_order: swapOrder }).eq("id", currentItem.id),
+        supabase.from(table).update({ sort_order: currentOrder }).eq("id", swapItem.id)
+      ]);
+      
+      if (table === "projects") fetchProjects();
+      else fetchCertifications();
+    } catch (err: any) {
+      showToast(`Gagal memindahkan urutan: ${err.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetProjectForm = () => {
@@ -598,6 +663,21 @@ export default function AdminDashboard() {
             }`}
           >
             <Award className="w-4 h-4" /> Sertifikasi
+          </button>
+          <button
+            onClick={() => setActiveTab("messages")}
+            className={`flex items-center gap-2 px-5 py-3 border-b-2 font-bold text-sm transition-all ${
+              activeTab === "messages"
+                ? "border-sky-500 text-sky-500"
+                : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" /> Pesan Masuk
+            {messages.length > 0 && (
+              <span className="ml-1 px-2 py-0.5 rounded-full bg-sky-500 text-white text-[10px]">
+                {messages.length}
+              </span>
+            )}
           </button>
         </div>
 
@@ -958,6 +1038,22 @@ export default function AdminDashboard() {
                       
                       <div className="flex items-center gap-1">
                         <button
+                          onClick={() => moveOrder("projects", projects.indexOf(proj), "up")}
+                          disabled={projects.indexOf(proj) === 0}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-colors disabled:opacity-30"
+                          title="Pindah ke Atas"
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => moveOrder("projects", projects.indexOf(proj), "down")}
+                          disabled={projects.indexOf(proj) === projects.length - 1}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-colors disabled:opacity-30"
+                          title="Pindah ke Bawah"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleEditProjectClick(proj)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-colors"
                           title="Edit Proyek"
@@ -1136,6 +1232,8 @@ export default function AdminDashboard() {
                     <div className="flex items-center justify-between gap-2">
                       <h4 className="font-quicksand font-bold text-base truncate">{cert.name}</h4>
                       <div className="flex items-center gap-1">
+                        <button onClick={() => moveOrder("certifications", certifications.indexOf(cert), "up")} disabled={certifications.indexOf(cert) === 0} className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 transition-colors disabled:opacity-30" title="Pindah ke Atas"><ChevronUp className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => moveOrder("certifications", certifications.indexOf(cert), "down")} disabled={certifications.indexOf(cert) === certifications.length - 1} className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 transition-colors disabled:opacity-30" title="Pindah ke Bawah"><ChevronDown className="w-3.5 h-3.5" /></button>
                         <button onClick={() => handleEditCertClick(cert)} className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 transition-colors"><Edit2 className="w-3.5 h-3.5" /></button>
                         <button onClick={() => deleteCert(cert.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
@@ -1149,6 +1247,46 @@ export default function AdminDashboard() {
                 <div className="col-span-2 py-16 text-center text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl space-y-2">
                   <Award className="w-12 h-12 mx-auto stroke-1" />
                   <p className="font-semibold text-sm">Belum ada sertifikasi ditambahkan.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {/* MESSAGES TAB */}
+        {activeTab === "messages" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm">
+              <div>
+                <h3 className="font-quicksand font-bold text-lg">Pesan Masuk (Contact Form)</h3>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Kumpulan pesan yang dikirim melalui form kontak.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              {messages.map((msg) => (
+                <div key={msg.id} className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-sky-500 bg-sky-50 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-500/20">
+                    <MessageSquare className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-col">
+                        <h4 className="font-quicksand font-bold text-base truncate">{msg.name}</h4>
+                        <a href={`mailto:${msg.email}`} className="text-xs font-semibold text-sky-500 dark:text-sky-400 mt-0.5 truncate flex items-center gap-1"><Mail className="w-3 h-3" /> {msg.email}</a>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => deleteMessage(msg.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors" title="Hapus Pesan"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                    <p className="text-xs font-semibold text-slate-400 mt-2">{new Date(msg.created_at).toLocaleString('id-ID')}</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 mt-2 whitespace-pre-wrap bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800">{msg.message}</p>
+                  </div>
+                </div>
+              ))}
+              {messages.length === 0 && (
+                <div className="py-16 text-center text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl space-y-2">
+                  <MessageSquare className="w-12 h-12 mx-auto stroke-1" />
+                  <p className="font-semibold text-sm">Belum ada pesan masuk.</p>
                 </div>
               )}
             </div>

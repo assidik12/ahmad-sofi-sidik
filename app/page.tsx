@@ -45,11 +45,13 @@ export default async function Home() {
       .maybeSingle(),
     supabase
       .from("projects")
-      .select("id, title, description, tags, emoji, gradient_from, gradient_to, github_url, live_url")
+      .select("id, title, description, tags, emoji, gradient_from, gradient_to, github_url, live_url, sort_order")
+      .order("sort_order", { ascending: true })
       .order("id", { ascending: true }),
     supabase
       .from("certifications")
       .select("*")
+      .order("sort_order", { ascending: true })
       .order("id", { ascending: true }),
   ]);
 

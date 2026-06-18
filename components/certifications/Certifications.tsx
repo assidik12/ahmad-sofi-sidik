@@ -13,6 +13,7 @@ export interface Certification {
   institution: string;
   fileUrl?: string;
   articleUrl?: string;
+  sortOrder?: number;
 }
 
 interface CertificationsProps {
@@ -179,6 +180,7 @@ export default function Certifications({ certifications = DEFAULT_CERTIFICATIONS
             <button 
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
+              aria-label="Previous page"
               className="p-2 rounded-full border border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:text-amber-500 hover:border-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -200,6 +202,7 @@ export default function Certifications({ certifications = DEFAULT_CERTIFICATIONS
             <button 
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
+              aria-label="Next page"
               className="p-2 rounded-full border border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:text-amber-500 hover:border-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <ChevronRight className="w-5 h-5" />

@@ -2,17 +2,49 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Send, Mail, MessageSquare, User, CheckCircle2 } from "lucide-react";
+import { Send, Mail, MessageSquare, User, CheckCircle2, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/lib/supabase";
 
 export default function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({ name: "", email: "", message: "" });
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // TODO: Tambahkan logika pengiriman email di sini (e.g. Resend, EmailJS, Server Action)
-    setSubmitted(true);
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const { error: supabaseError } = await supabase
+        .from("contact_messages")
+        .insert([
+          {
+            name: formData.name,
+            email: formData.email,
+            message: formData.message,
+          },
+        ]);
+
+      if (supabaseError) {
+        throw supabaseError;
+      }
+
+      setSubmitted(true);
+      setFormData({ name: "", email: "", message: "" });
+    } catch (err: any) {
+      console.error("Error submitting message:", err);
+      setError("Gagal mengirim pesan. Silakan coba lagi.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   return (
@@ -76,20 +108,21 @@ export default function ContactForm() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 space-y-5 shadow-sm">
+                {error && <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl">{error}</div>}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-2">
                     <label className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
                       <User className="w-3.5 h-3.5 text-sky-500" />
                       Nama
                     </label>
-                    <Input type="text" placeholder="John Doe" required />
+                    <Input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="John Doe" required disabled={isSubmitting} />
                   </div>
                   <div className="space-y-2">
                     <label className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
                       <Mail className="w-3.5 h-3.5 text-sky-500" />
                       Email
                     </label>
-                    <Input type="email" placeholder="john@example.com" required />
+                    <Input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="john@example.com" required disabled={isSubmitting} />
                   </div>
                 </div>
 
@@ -98,15 +131,25 @@ export default function ContactForm() {
                     <MessageSquare className="w-3.5 h-3.5 text-sky-500" />
                     Pesan
                   </label>
-                  <Textarea placeholder="Halo! Saya mau ngobrol tentang..." required className="min-h-[140px]" />
+                  <Textarea name="message" value={formData.message} onChange={handleChange} placeholder="Halo! Saya mau ngobrol tentang..." required className="min-h-[140px]" disabled={isSubmitting} />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl bg-sky-500 hover:bg-sky-600 text-white shadow-md hover:shadow-sky-500/30 hover:shadow-lg transition-all duration-200"
+                  disabled={isSubmitting}
+                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl bg-sky-500 hover:bg-sky-600 text-white shadow-md hover:shadow-sky-500/30 hover:shadow-lg transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  <Send className="w-4 h-4" />
-                  Kirim Pesan
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Mengirim...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Kirim Pesan
+                    </>
+                  )}
                 </button>
               </form>
             )}
@@ -116,3 +159,4 @@ export default function ContactForm() {
     </section>
   );
 }
+
