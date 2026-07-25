@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Instagram, Github, Linkedin, MapPin, GraduationCap, Book } from "lucide-react";
+import { Instagram, Github, Linkedin, MapPin, GraduationCap, Book, Map } from "lucide-react";
 
 interface AboutProps {
   fullName?: string;
@@ -36,6 +36,12 @@ const socialLinks = [
     label: "Blog",
     icon: Book,
     color: "hover:bg-purple-500 hover:text-white",
+  },
+  {
+    href: "https://roadmap.sh/u/assidik",
+    label: "Roadmap.sh",
+    icon: Map,
+    color: "hover:bg-amber-500 hover:text-white",
   },
 ];
 

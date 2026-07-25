@@ -28,8 +28,13 @@ export const metadata: Metadata = {
     "Portfolio",
     "Next.js",
     "React",
+    "Roadmap.sh",
+    "roadmap.sh/u/assidik",
   ],
-  authors: [{ name: "Ahmad Sofi Sidik", url: "https://github.com/assidik12" }],
+  authors: [
+    { name: "Ahmad Sofi Sidik", url: "https://github.com/assidik12" },
+    { name: "Ahmad Sofi Sidik", url: "https://roadmap.sh/u/assidik" },
+  ],
   icons: {
     icon: [
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
@@ -65,9 +70,31 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Ahmad Sofi Sidik",
+  "url": "https://ahmad-sofi-sidik.vercel.app",
+  "sameAs": [
+    "https://github.com/assidik12",
+    "https://www.linkedin.com/in/ahmad-sofi-sidik/",
+    "https://www.instagram.com/as.sidik_/",
+    "https://roadmap.sh/u/assidik",
+    "https://medium.com/@sofi.sidik12",
+  ],
+  "jobTitle": "Software Engineer",
+  "almaMater": "Universitas Bina Sarana Informatika Kota Tegal",
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" suppressHydrationWarning>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className={`${quicksand.variable} ${inter.variable} font-inter antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
