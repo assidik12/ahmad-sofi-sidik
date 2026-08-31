@@ -13,6 +13,18 @@ export interface Experience {
   keyTasks: string[];
 }
 
+export interface Client {
+  id: string;
+  name: string;
+  logoUrl?: string | null;
+  role: string;
+  companyName: string;
+  startDate: string;
+  endDate?: string | null;
+  isActive: boolean;
+  orderIndex: number;
+}
+
 const sampleExperiences: Experience[] = [
   {
     id: 1,
@@ -105,7 +117,22 @@ function ExperienceCard({ exp }: { exp: Experience }) {
   );
 }
 
-export default function Clients() {
+export default function Clients({ clients }: { clients?: Client[] }) {
+  const activeClients =
+    clients && clients.length > 0
+      ? clients
+      : sampleExperiences.map((exp) => ({
+          id: String(exp.id),
+          name: exp.organization,
+          logoUrl: exp.logo,
+          role: exp.role,
+          companyName: exp.organization,
+          startDate: exp.startDate,
+          endDate: exp.endDate,
+          isActive: true,
+          orderIndex: Number(exp.id) - 1,
+        }));
+
   return (
     <section id="clients" className="py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
@@ -116,8 +143,19 @@ export default function Clients() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {sampleExperiences.map((exp) => (
-            <ExperienceCard key={exp.id} exp={exp} />
+          {activeClients.map((client) => (
+            <ExperienceCard
+              key={client.id}
+              exp={{
+                id: client.id,
+                organization: client.companyName || client.name,
+                logo: client.logoUrl || undefined,
+                role: client.role,
+                startDate: client.startDate,
+                endDate: client.endDate || undefined,
+                keyTasks: [],
+              }}
+            />
           ))}
         </div>
       </div>

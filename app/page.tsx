@@ -1,5 +1,5 @@
 // ISR: re-fetch dari Supabase setiap 60 detik di production
-export const revalidate = 60;
+export const revalidate = 30;
 
 import Navbar from "@/components/navbar/Navbar";
 import Hero from "@/components/hero/Hero";
@@ -9,7 +9,7 @@ import Projects from "@/components/projects/Projects";
 import Certifications, { type Certification } from "@/components/certifications/Certifications";
 import ContactForm from "@/components/contact/ContactForm";
 import Footer from "@/components/footer/Footer";
-import Clients from "@/components/client/client";
+import Clients, { type Client } from "@/components/client/client";
 import { createClient } from "@supabase/supabase-js";
 import { type Project } from "@/components/projects/ProjectCard";
 
@@ -33,11 +33,12 @@ export default async function Home() {
   const supabase = createServerSupabase();
 
   // --- Fetch all data in parallel on the server ---
-  const [profileResult, projectsResult, certsResult, skillsResult] = await Promise.allSettled([
+  const [profileResult, projectsResult, certsResult, skillsResult, clientsResult] = await Promise.allSettled([
     supabase.from("profile").select("full_name, title, bio_hero, bio_about, avatar_url, cv_url").limit(1).maybeSingle(),
     supabase.from("projects").select("id, title, description, tags, emoji, gradient_from, gradient_to, github_url, live_url, sort_order").order("sort_order", { ascending: true }).order("id", { ascending: true }),
     supabase.from("certifications").select("*").order("sort_order", { ascending: true }).order("id", { ascending: true }),
     supabase.from("skill_groups").select("*").order("sort_order", { ascending: true }).order("id", { ascending: true }),
+    supabase.from("clients").select("*").eq("is_active", true).order("order_index", { ascending: true }).order("created_at", { ascending: false }),
   ]);
 
   // --- Parse profile ---
@@ -92,6 +93,21 @@ export default async function Home() {
     }));
   }
 
+  let clients: Client[] = [];
+  if (clientsResult.status === "fulfilled" && clientsResult.value.data) {
+    clients = clientsResult.value.data.map((client: any) => ({
+      id: client.id,
+      name: client.name,
+      logoUrl: client.logo_url,
+      role: client.role,
+      companyName: client.company_name,
+      startDate: client.start_date,
+      endDate: client.end_date,
+      isActive: client.is_active,
+      orderIndex: client.order_index,
+    }));
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 overflow-x-hidden">
       <Navbar />
@@ -100,7 +116,7 @@ export default async function Home() {
       <Skills skillGroups={skillGroups} />
       <Certifications certifications={certifications} loading={false} />
       <Projects projects={projects} loading={false} />
-      <Clients />
+      <Clients clients={clients} />
       <ContactForm />
       <Footer />
     </main>

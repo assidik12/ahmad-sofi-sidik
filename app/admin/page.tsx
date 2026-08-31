@@ -6,6 +6,7 @@ import { Lock, Eye, EyeOff, Save, Upload, Plus, Trash2, Edit2, ExternalLink, Log
 import { type Project } from "@/components/projects/ProjectCard";
 import { type Certification } from "@/components/certifications/Certifications";
 import { type SkillGroup } from "@/components/skills/Skills";
+import { type Client } from "@/components/client/client";
 
 interface Toast {
   type: "success" | "error" | "info";
@@ -18,7 +19,7 @@ export default function AdminDashboard() {
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState("");
 
-  const [activeTab, setActiveTab] = useState<"profile" | "projects" | "skills" | "certifications" | "messages">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "projects" | "skills" | "clients" | "certifications" | "messages">("profile");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
 
@@ -57,6 +58,22 @@ export default function AdminDashboard() {
   const [isEditingSkill, setIsEditingSkill] = useState(false);
   const [showSkillForm, setShowSkillForm] = useState(false);
 
+  // Clients States
+  const [clients, setClients] = useState<Client[]>([]);
+  const [clientForm, setClientForm] = useState({
+    id: "",
+    name: "",
+    logoUrl: "",
+    role: "",
+    companyName: "",
+    startDate: "",
+    endDate: "",
+    isActive: true,
+  });
+  const [isEditingClient, setIsEditingClient] = useState(false);
+  const [showClientForm, setShowClientForm] = useState(false);
+  const [clientStatusFilter, setClientStatusFilter] = useState("all");
+
   // Certifications States
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [certForm, setCertForm] = useState({
@@ -91,9 +108,10 @@ export default function AdminDashboard() {
     fetchProfile();
     fetchProjects();
     fetchSkills();
+    fetchClients();
     fetchCertifications();
     fetchMessages();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, clientStatusFilter]);
 
   // Autohide toast after 4 seconds
   useEffect(() => {
@@ -250,6 +268,30 @@ export default function AdminDashboard() {
       }
     } catch (err: any) {
       showToast(`Gagal memuat sertifikasi: ${err.message}`, "error");
+    }
+  };
+
+  const fetchClients = async () => {
+    try {
+      const query = clientStatusFilter === "all" ? "" : `&is_active=${clientStatusFilter}`;
+      const response = await fetch(`/api/clients?page=1&page_size=100${query}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Gagal memuat client.");
+      setClients(
+        (result.data || []).map((client: any) => ({
+          id: client.id,
+          name: client.name,
+          logoUrl: client.logo_url,
+          role: client.role,
+          companyName: client.company_name,
+          startDate: client.start_date,
+          endDate: client.end_date,
+          isActive: client.is_active,
+          orderIndex: client.order_index,
+        })),
+      );
+    } catch (err: any) {
+      showToast(`Gagal memuat client: ${err.message}`, "error");
     }
   };
   const fetchMessages = async () => {
@@ -562,6 +604,93 @@ export default function AdminDashboard() {
     setIsEditingSkill(false);
   };
 
+  const resetClientForm = () => {
+    setClientForm({ id: "", name: "", logoUrl: "", role: "", companyName: "", startDate: "", endDate: "", isActive: true });
+    setIsEditingClient(false);
+  };
+
+  const saveClient = async (event: React.FormEvent) => {
+    event.preventDefault();
+    try {
+      setLoading(true);
+      const response = await fetch("/api/clients", {
+        method: isEditingClient ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: clientForm.id || undefined,
+          name: clientForm.name,
+          logo_url: clientForm.logoUrl || null,
+          role: clientForm.role,
+          company_name: clientForm.companyName,
+          start_date: clientForm.startDate,
+          end_date: clientForm.endDate || null,
+          is_active: clientForm.isActive,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Gagal menyimpan client.");
+      showToast(isEditingClient ? "Client berhasil diupdate!" : "Client berhasil ditambahkan!", "success");
+      setShowClientForm(false);
+      resetClientForm();
+      fetchClients();
+    } catch (err: any) {
+      showToast(`Gagal menyimpan client: ${err.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteClient = async (id: string) => {
+    if (!confirm("Hapus client ini?")) return;
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/clients?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Gagal menghapus client.");
+      showToast("Client berhasil dihapus!", "success");
+      fetchClients();
+    } catch (err: any) {
+      showToast(`Gagal menghapus client: ${err.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditClientClick = (client: Client) => {
+    setClientForm({
+      id: client.id,
+      name: client.name,
+      logoUrl: client.logoUrl || "",
+      role: client.role,
+      companyName: client.companyName,
+      startDate: client.startDate,
+      endDate: client.endDate || "",
+      isActive: client.isActive,
+    });
+    setIsEditingClient(true);
+    setShowClientForm(true);
+  };
+
+  const moveClientOrder = async (index: number, direction: "up" | "down") => {
+    if ((direction === "up" && index === 0) || (direction === "down" && index === clients.length - 1)) return;
+    const nextClients = [...clients];
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    [nextClients[index], nextClients[swapIndex]] = [nextClients[swapIndex], nextClients[index]];
+    setClients(nextClients);
+    try {
+      const response = await fetch("/api/clients", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: nextClients.map((client) => ({ id: client.id })) }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Gagal mengubah urutan client.");
+    } catch (err: any) {
+      showToast(`Gagal memindahkan client: ${err.message}`, "error");
+      fetchClients();
+    }
+  };
+
   const moveSkillOrder = async (index: number, direction: "up" | "down") => {
     if ((direction === "up" && index === 0) || (direction === "down" && index === skills.length - 1)) return;
 
@@ -574,10 +703,7 @@ export default function AdminDashboard() {
       const currentOrder = currentItem.sortOrder || index;
       const swapOrder = swapItem.sortOrder || swapIndex;
 
-      await Promise.all([
-        supabase.from("skill_groups").update({ sort_order: swapOrder }).eq("id", currentItem.id),
-        supabase.from("skill_groups").update({ sort_order: currentOrder }).eq("id", swapItem.id),
-      ]);
+      await Promise.all([supabase.from("skill_groups").update({ sort_order: swapOrder }).eq("id", currentItem.id), supabase.from("skill_groups").update({ sort_order: currentOrder }).eq("id", swapItem.id)]);
 
       fetchSkills();
     } catch (err: any) {
@@ -783,6 +909,14 @@ export default function AdminDashboard() {
             }`}
           >
             <Award className="w-4 h-4" /> Sertifikasi
+          </button>
+          <button
+            onClick={() => setActiveTab("clients")}
+            className={`flex items-center gap-2 px-5 py-3 border-b-2 font-bold text-sm transition-all ${
+              activeTab === "clients" ? "border-sky-500 text-sky-500" : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            }`}
+          >
+            <User className="w-4 h-4" /> Client / Mitra
           </button>
           <button
             onClick={() => setActiveTab("messages")}
@@ -1190,9 +1324,7 @@ export default function AdminDashboard() {
 
             {showSkillForm && (
               <form onSubmit={saveSkill} className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-6 shadow-sm space-y-6">
-                <h3 className="font-quicksand text-xl font-bold flex items-center gap-2 text-sky-500">
-                  ✨ {isEditingSkill ? "Edit Skill" : "Buat Skill Baru"}
-                </h3>
+                <h3 className="font-quicksand text-xl font-bold flex items-center gap-2 text-sky-500">✨ {isEditingSkill ? "Edit Skill" : "Buat Skill Baru"}</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1">
@@ -1241,7 +1373,11 @@ export default function AdminDashboard() {
                   >
                     Batal
                   </button>
-                  <button type="submit" disabled={loading} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold shadow-lg shadow-sky-500/20 hover:shadow-sky-500/35 transition-all disabled:opacity-50">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold shadow-lg shadow-sky-500/20 hover:shadow-sky-500/35 transition-all disabled:opacity-50"
+                  >
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     {isEditingSkill ? "Update Skill" : "Simpan Skill"}
                   </button>
@@ -1287,13 +1423,196 @@ export default function AdminDashboard() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {group.skills.map((skill) => (
-                      <span key={`${group.id}-${skill}`} className="inline-flex items-center px-2.5 py-1 rounded-full border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 text-xs font-semibold">
+                      <span
+                        key={`${group.id}-${skill}`}
+                        className="inline-flex items-center px-2.5 py-1 rounded-full border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 text-xs font-semibold"
+                      >
                         {skill}
                       </span>
                     ))}
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* CLIENTS TAB */}
+        {activeTab === "clients" && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm">
+              <div>
+                <h3 className="font-quicksand font-bold text-lg">Management Client / Mitra</h3>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Kelola pengalaman kerja dan kolaborasi yang tampil di portfolio.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <select
+                  value={clientStatusFilter}
+                  onChange={(event) => setClientStatusFilter(event.target.value)}
+                  className="px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm outline-none focus:border-sky-500"
+                >
+                  <option value="all">Semua Status</option>
+                  <option value="true">Aktif</option>
+                  <option value="false">Nonaktif</option>
+                </select>
+                <button
+                  onClick={() => {
+                    resetClientForm();
+                    setShowClientForm(true);
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-bold shadow-md transition-all"
+                >
+                  <Plus className="w-4 h-4" /> Client Baru
+                </button>
+              </div>
+            </div>
+
+            {showClientForm && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true" aria-labelledby="client-form-title">
+                <form onSubmit={saveClient} className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl space-y-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <h3 id="client-form-title" className="font-quicksand text-xl font-bold text-sky-500">
+                      {isEditingClient ? "Edit Client / Mitra" : "Tambah Client / Mitra"}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetClientForm();
+                        setShowClientForm(false);
+                      }}
+                      className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-2xl"
+                      aria-label="Tutup"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">Nama</label>
+                      <input
+                        required
+                        value={clientForm.name}
+                        onChange={(event) => setClientForm({ ...clientForm, name: event.target.value })}
+                        placeholder="Nama kontak atau project"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:border-sky-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">Posisi / Role</label>
+                      <input
+                        required
+                        value={clientForm.role}
+                        onChange={(event) => setClientForm({ ...clientForm, role: event.target.value })}
+                        placeholder="Backend Developer"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:border-sky-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">Nama Perusahaan</label>
+                      <input
+                        required
+                        value={clientForm.companyName}
+                        onChange={(event) => setClientForm({ ...clientForm, companyName: event.target.value })}
+                        placeholder="Nama perusahaan"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:border-sky-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">Logo URL</label>
+                      <input
+                        type="url"
+                        value={clientForm.logoUrl}
+                        onChange={(event) => setClientForm({ ...clientForm, logoUrl: event.target.value })}
+                        placeholder="https://..."
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:border-sky-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">Tanggal Mulai</label>
+                      <input
+                        required
+                        type="date"
+                        value={clientForm.startDate}
+                        onChange={(event) => setClientForm({ ...clientForm, startDate: event.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:border-sky-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">Tanggal Selesai</label>
+                      <input
+                        type="date"
+                        value={clientForm.endDate}
+                        onChange={(event) => setClientForm({ ...clientForm, endDate: event.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:border-sky-500"
+                      />
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-3 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                    <input type="checkbox" checked={clientForm.isActive} onChange={(event) => setClientForm({ ...clientForm, isActive: event.target.checked })} className="h-4 w-4 accent-sky-500" /> Tampilkan sebagai client aktif
+                  </label>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetClientForm();
+                        setShowClientForm(false);
+                      }}
+                      className="px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 font-semibold"
+                    >
+                      Batal
+                    </button>
+                    <button type="submit" disabled={loading} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold disabled:opacity-50">
+                      {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                      <Save className="w-4 h-4" /> Simpan
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {clients.map((client, index) => (
+                <div key={client.id} className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800 text-sm font-bold text-slate-500">
+                    {client.logoUrl ? <img src={client.logoUrl} alt={`${client.companyName} logo`} className="w-full h-full object-contain" /> : client.companyName.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h4 className="font-quicksand font-bold truncate">{client.companyName}</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          {client.role} · {client.name}
+                        </p>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${client.isActive ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>{client.isActive ? "AKTIF" : "NONAKTIF"}</span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">
+                      {client.startDate} - {client.endDate || "Sekarang"}
+                    </p>
+                    <div className="flex items-center gap-1 mt-3">
+                      <button onClick={() => moveClientOrder(index, "up")} disabled={index === 0} className="p-1.5 text-slate-400 hover:text-sky-500 disabled:opacity-30" title="Pindah ke Atas">
+                        <ChevronUp className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => moveClientOrder(index, "down")} disabled={index === clients.length - 1} className="p-1.5 text-slate-400 hover:text-sky-500 disabled:opacity-30" title="Pindah ke Bawah">
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleEditClientClick(client)} className="p-1.5 text-slate-400 hover:text-sky-500" title="Edit">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => deleteClient(client.id)} className="p-1.5 text-slate-400 hover:text-rose-500" title="Hapus">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {clients.length === 0 && (
+                <div className="col-span-2 py-16 text-center text-slate-400 bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
+                  <User className="w-12 h-12 mx-auto stroke-1" />
+                  <p className="font-semibold text-sm mt-2">Belum ada client pada filter ini.</p>
+                </div>
+              )}
             </div>
           </div>
         )}
