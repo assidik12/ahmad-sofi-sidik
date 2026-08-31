@@ -98,6 +98,7 @@ export default async function Home() {
     clients = clientsResult.value.data.map((client: any) => ({
       id: client.id,
       name: client.name,
+      description: client.description || "",
       logoUrl: client.logo_url,
       role: client.role,
       companyName: client.company_name,

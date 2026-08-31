@@ -63,6 +63,7 @@ export default function AdminDashboard() {
   const [clientForm, setClientForm] = useState({
     id: "",
     name: "",
+    description: "",
     logoUrl: "",
     role: "",
     companyName: "",
@@ -281,6 +282,7 @@ export default function AdminDashboard() {
         (result.data || []).map((client: any) => ({
           id: client.id,
           name: client.name,
+          description: client.description || "",
           logoUrl: client.logo_url,
           role: client.role,
           companyName: client.company_name,
@@ -605,7 +607,7 @@ export default function AdminDashboard() {
   };
 
   const resetClientForm = () => {
-    setClientForm({ id: "", name: "", logoUrl: "", role: "", companyName: "", startDate: "", endDate: "", isActive: true });
+    setClientForm({ id: "", name: "", description: "", logoUrl: "", role: "", companyName: "", startDate: "", endDate: "", isActive: true });
     setIsEditingClient(false);
   };
 
@@ -619,6 +621,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           id: clientForm.id || undefined,
           name: clientForm.name,
+          description: clientForm.description,
           logo_url: clientForm.logoUrl || null,
           role: clientForm.role,
           company_name: clientForm.companyName,
@@ -660,6 +663,7 @@ export default function AdminDashboard() {
     setClientForm({
       id: client.id,
       name: client.name,
+      description: client.description,
       logoUrl: client.logoUrl || "",
       role: client.role,
       companyName: client.companyName,
@@ -1498,6 +1502,17 @@ export default function AdminDashboard() {
                         className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:border-sky-500"
                       />
                     </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">Deskripsi Experience</label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={clientForm.description}
+                        onChange={(event) => setClientForm({ ...clientForm, description: event.target.value })}
+                        placeholder="Ringkasan pengalaman, kontribusi, atau project yang dikerjakan"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:border-sky-500"
+                      />
+                    </div>
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">Posisi / Role</label>
                       <input
@@ -1590,6 +1605,7 @@ export default function AdminDashboard() {
                     <p className="text-xs text-slate-400 mt-2">
                       {client.startDate} - {client.endDate || "Sekarang"}
                     </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 line-clamp-2">{client.description}</p>
                     <div className="flex items-center gap-1 mt-3">
                       <button onClick={() => moveClientOrder(index, "up")} disabled={index === 0} className="p-1.5 text-slate-400 hover:text-sky-500 disabled:opacity-30" title="Pindah ke Atas">
                         <ChevronUp className="w-4 h-4" />

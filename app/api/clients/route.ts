@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
-const clientColumns = "id, name, logo_url, role, company_name, start_date, end_date, is_active, order_index, created_at, updated_at";
+const clientColumns = "id, name, description, logo_url, role, company_name, start_date, end_date, is_active, order_index, created_at, updated_at";
 
 function validateClientPayload(payload: unknown) {
   if (!payload || typeof payload !== "object") return "Payload tidak valid.";
 
   const data = payload as Record<string, unknown>;
-  const requiredFields = ["name", "role", "company_name", "start_date"];
+  const requiredFields = ["name", "description", "role", "company_name", "start_date"];
   if (requiredFields.some((field) => typeof data[field] !== "string" || !data[field]?.trim())) {
     return "Nama, posisi, perusahaan, dan tanggal mulai wajib diisi.";
   }
@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
       .from("clients")
       .insert({
         name: String(data.name).trim(),
+        description: String(data.description).trim(),
         logo_url: data.logo_url || null,
         role: String(data.role).trim(),
         company_name: String(data.company_name).trim(),
@@ -77,6 +78,7 @@ export async function PUT(request: NextRequest) {
       .from("clients")
       .update({
         name: String(data.name).trim(),
+        description: String(data.description).trim(),
         logo_url: data.logo_url || null,
         role: String(data.role).trim(),
         company_name: String(data.company_name).trim(),

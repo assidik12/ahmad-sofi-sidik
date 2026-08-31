@@ -7,6 +7,7 @@ export interface Experience {
   organization: string;
   logo?: string; // optional path in /public
   role: string;
+  description?: string;
   startDate: string; // e.g. "Jan 2024"
   endDate?: string; // e.g. "Jun 2024" or "Present"
   location?: string;
@@ -16,6 +17,7 @@ export interface Experience {
 export interface Client {
   id: string;
   name: string;
+  description: string;
   logoUrl?: string | null;
   role: string;
   companyName: string;
@@ -105,6 +107,7 @@ function ExperienceCard({ exp }: { exp: Experience }) {
           </div>
 
           <div className={`mt-3 text-sm text-slate-700 dark:text-slate-300 ${open ? "" : "hidden"}`}>
+            {exp.description && <p className="mb-3 leading-relaxed">{exp.description}</p>}
             <ul className="list-disc list-inside space-y-2">
               {exp.keyTasks.map((t, i) => (
                 <li key={i}>{t}</li>
@@ -124,6 +127,7 @@ export default function Clients({ clients }: { clients?: Client[] }) {
       : sampleExperiences.map((exp) => ({
           id: String(exp.id),
           name: exp.organization,
+          description: exp.keyTasks.join(" "),
           logoUrl: exp.logo,
           role: exp.role,
           companyName: exp.organization,
@@ -151,6 +155,7 @@ export default function Clients({ clients }: { clients?: Client[] }) {
                 organization: client.companyName || client.name,
                 logo: client.logoUrl || undefined,
                 role: client.role,
+                description: client.description,
                 startDate: client.startDate,
                 endDate: client.endDate || undefined,
                 keyTasks: [],
