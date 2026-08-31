@@ -2,13 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import {
-  Lock, Eye, EyeOff, Save, Upload, Plus, Trash2, Edit2,
-  ExternalLink, LogOut, CheckCircle, AlertCircle, Loader2, Sparkles, Folder, User, Award, MessageSquare, Mail,
-  ChevronUp, ChevronDown
-} from "lucide-react";
+import { Lock, Eye, EyeOff, Save, Upload, Plus, Trash2, Edit2, ExternalLink, LogOut, CheckCircle, AlertCircle, Loader2, Sparkles, Folder, User, Award, MessageSquare, Mail, ChevronUp, ChevronDown } from "lucide-react";
 import { type Project } from "@/components/projects/ProjectCard";
 import { type Certification } from "@/components/certifications/Certifications";
+import { type SkillGroup } from "@/components/skills/Skills";
 
 interface Toast {
   type: "success" | "error" | "info";
@@ -21,7 +18,7 @@ export default function AdminDashboard() {
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState("");
 
-  const [activeTab, setActiveTab] = useState<"profile" | "projects" | "certifications" | "messages">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "projects" | "skills" | "certifications" | "messages">("profile");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
 
@@ -48,6 +45,17 @@ export default function AdminDashboard() {
   });
   const [isEditingProject, setIsEditingProject] = useState(false);
   const [showProjectForm, setShowProjectForm] = useState(false);
+
+  // Skills States
+  const [skills, setSkills] = useState<SkillGroup[]>([]);
+  const [skillForm, setSkillForm] = useState({
+    id: "",
+    category: "",
+    emoji: "🚀",
+    skills: "",
+  });
+  const [isEditingSkill, setIsEditingSkill] = useState(false);
+  const [showSkillForm, setShowSkillForm] = useState(false);
 
   // Certifications States
   const [certifications, setCertifications] = useState<Certification[]>([]);
@@ -82,6 +90,7 @@ export default function AdminDashboard() {
     if (!isAuthenticated) return;
     fetchProfile();
     fetchProjects();
+    fetchSkills();
     fetchCertifications();
     fetchMessages();
   }, [isAuthenticated]);
@@ -122,11 +131,7 @@ export default function AdminDashboard() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("profile")
-        .select("*")
-        .limit(1)
-        .maybeSingle();
+      const { data, error } = await supabase.from("profile").select("*").limit(1).maybeSingle();
 
       if (error) throw error;
 
@@ -147,11 +152,7 @@ export default function AdminDashboard() {
 
   const fetchProjects = async () => {
     try {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .order("sort_order", { ascending: true })
-        .order("id", { ascending: true });
+      const { data, error } = await supabase.from("projects").select("*").order("sort_order", { ascending: true }).order("id", { ascending: true });
 
       if (error) throw error;
 
@@ -175,27 +176,77 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchSkills = async () => {
+    try {
+      const { data, error } = await supabase.from("skill_groups").select("*").order("sort_order", { ascending: true }).order("id", { ascending: true });
+
+      if (error) {
+        const fallback = await supabase.from("skills").select("*").order("sort_order", { ascending: true }).order("id", { ascending: true });
+
+        if (fallback.error) throw fallback.error;
+        if (fallback.data) {
+          setSkills(
+            fallback.data.map((group: any) => ({
+              id: group.id,
+              category: group.category || "General",
+              emoji: group.emoji || "🚀",
+              skills: Array.isArray(group.skills)
+                ? group.skills
+                : typeof group.skills === "string"
+                  ? group.skills
+                      .split(",")
+                      .map((skill: string) => skill.trim())
+                      .filter(Boolean)
+                  : [],
+              sortOrder: group.sort_order || 0,
+            })),
+          );
+        }
+        return;
+      }
+
+      if (data) {
+        setSkills(
+          data.map((group: any) => ({
+            id: group.id,
+            category: group.category || "General",
+            emoji: group.emoji || "🚀",
+            skills: Array.isArray(group.skills)
+              ? group.skills
+              : typeof group.skills === "string"
+                ? group.skills
+                    .split(",")
+                    .map((skill: string) => skill.trim())
+                    .filter(Boolean)
+                : [],
+            sortOrder: group.sort_order || 0,
+          })),
+        );
+      }
+    } catch (err: any) {
+      showToast(`Gagal memuat skill: ${err.message}`, "error");
+    }
+  };
+
   const fetchCertifications = async () => {
     try {
-      const { data, error } = await supabase
-        .from("certifications")
-        .select("*")
-        .order("sort_order", { ascending: true })
-        .order("id", { ascending: true });
+      const { data, error } = await supabase.from("certifications").select("*").order("sort_order", { ascending: true }).order("id", { ascending: true });
 
       if (error) throw error;
 
       if (data) {
-        setCertifications(data.map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          description: c.description,
-          date: c.date,
-          institution: c.institution,
-          fileUrl: c.file_url || "",
-          articleUrl: c.article_url || "",
-          sortOrder: c.sort_order || 0,
-        })));
+        setCertifications(
+          data.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            description: c.description,
+            date: c.date,
+            institution: c.institution,
+            fileUrl: c.file_url || "",
+            articleUrl: c.article_url || "",
+            sortOrder: c.sort_order || 0,
+          })),
+        );
       }
     } catch (err: any) {
       showToast(`Gagal memuat sertifikasi: ${err.message}`, "error");
@@ -203,10 +254,7 @@ export default function AdminDashboard() {
   };
   const fetchMessages = async () => {
     try {
-      const { data, error } = await supabase
-        .from("contact_messages")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("contact_messages").select("*").order("created_at", { ascending: false });
 
       if (error) throw error;
       if (data) setMessages(data);
@@ -256,16 +304,14 @@ export default function AdminDashboard() {
           .eq("id", rowId);
       } else {
         // Insert new row
-        result = await supabase
-          .from("profile")
-          .insert({
-            full_name: fullName,
-            title: title,
-            bio_hero: bioHero,
-            bio_about: bioAbout,
-            avatar_url: avatarUrl,
-            cv_url: cvUrl,
-          });
+        result = await supabase.from("profile").insert({
+          full_name: fullName,
+          title: title,
+          bio_hero: bioHero,
+          bio_about: bioAbout,
+          avatar_url: avatarUrl,
+          cv_url: cvUrl,
+        });
       }
 
       if (result.error) throw result.error;
@@ -284,11 +330,9 @@ export default function AdminDashboard() {
 
     const isAvatar = type === "avatar";
     const isCert = type === "cert";
-    const setUploading = isCert ? setUploadingCert : (isAvatar ? setUploadingAvatar : setUploadingCv);
-    const folder = isCert ? "certifications" : (isAvatar ? "avatars" : "cv");
-    const allowedTypes = isAvatar 
-      ? ["image/jpeg", "image/png", "image/webp", "image/gif"] 
-      : ["application/pdf"];
+    const setUploading = isCert ? setUploadingCert : isAvatar ? setUploadingAvatar : setUploadingCv;
+    const folder = isCert ? "certifications" : isAvatar ? "avatars" : "cv";
+    const allowedTypes = isAvatar ? ["image/jpeg", "image/png", "image/webp", "image/gif"] : ["application/pdf"];
 
     if (!allowedTypes.includes(file.type)) {
       showToast(isAvatar ? "Format file harus berupa gambar (JPG, PNG, WEBP)!" : "Format file harus berupa PDF!", "error");
@@ -302,16 +346,12 @@ export default function AdminDashboard() {
       const filePath = `${folder}/${fileName}`;
 
       // Upload file directly to Supabase storage bucket
-      const { error: uploadError } = await supabase.storage
-        .from("portfolio-assets")
-        .upload(filePath, file, { cacheControl: "3600", upsert: true });
+      const { error: uploadError } = await supabase.storage.from("portfolio-assets").upload(filePath, file, { cacheControl: "3600", upsert: true });
 
       if (uploadError) throw uploadError;
 
       // Get Public URL
-      const { data } = supabase.storage
-        .from("portfolio-assets")
-        .getPublicUrl(filePath);
+      const { data } = supabase.storage.from("portfolio-assets").getPublicUrl(filePath);
 
       if (isCert) {
         setCertForm({ ...certForm, fileUrl: data.publicUrl });
@@ -354,16 +394,11 @@ export default function AdminDashboard() {
       let error;
       if (isEditingProject && projectForm.id) {
         // Update
-        const result = await supabase
-          .from("projects")
-          .update(dbPayload)
-          .eq("id", projectForm.id);
+        const result = await supabase.from("projects").update(dbPayload).eq("id", projectForm.id);
         error = result.error;
       } else {
         // Insert
-        const result = await supabase
-          .from("projects")
-          .insert(dbPayload);
+        const result = await supabase.from("projects").insert(dbPayload);
         error = result.error;
       }
 
@@ -386,10 +421,7 @@ export default function AdminDashboard() {
 
     try {
       setLoading(true);
-      const { error } = await supabase
-        .from("projects")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("projects").delete().eq("id", id);
 
       if (error) throw error;
 
@@ -428,15 +460,12 @@ export default function AdminDashboard() {
 
     try {
       setLoading(true);
-      
+
       const currentOrder = currentItem.sortOrder || index;
       const swapOrder = swapItem.sortOrder || swapIndex;
 
-      await Promise.all([
-        supabase.from(table).update({ sort_order: swapOrder }).eq("id", currentItem.id),
-        supabase.from(table).update({ sort_order: currentOrder }).eq("id", swapItem.id)
-      ]);
-      
+      await Promise.all([supabase.from(table).update({ sort_order: swapOrder }).eq("id", currentItem.id), supabase.from(table).update({ sort_order: currentOrder }).eq("id", swapItem.id)]);
+
       if (table === "projects") fetchProjects();
       else fetchCertifications();
     } catch (err: any) {
@@ -459,6 +488,103 @@ export default function AdminDashboard() {
       liveUrl: "",
     });
     setIsEditingProject(false);
+  };
+
+  const saveSkill = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const parsedSkills = skillForm.skills
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
+
+      if (parsedSkills.length === 0) {
+        throw new Error("Minimal masukkan satu skill.");
+      }
+
+      const dbPayload = {
+        category: skillForm.category,
+        emoji: skillForm.emoji || "🚀",
+        skills: parsedSkills,
+      };
+
+      let result;
+      if (isEditingSkill && skillForm.id) {
+        result = await supabase.from("skill_groups").update(dbPayload).eq("id", skillForm.id);
+      } else {
+        result = await supabase.from("skill_groups").insert(dbPayload);
+      }
+
+      if (result?.error) throw result.error;
+
+      showToast(isEditingSkill ? "Skill berhasil diupdate!" : "Skill baru ditambahkan!", "success");
+      setShowSkillForm(false);
+      setIsEditingSkill(false);
+      resetSkillForm();
+      fetchSkills();
+    } catch (err: any) {
+      showToast(`Gagal menyimpan skill: ${err.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteSkill = async (id: number) => {
+    if (!confirm("Hapus kategori skill ini?")) return;
+
+    try {
+      setLoading(true);
+      const { error } = await supabase.from("skill_groups").delete().eq("id", id);
+      if (error) throw error;
+      showToast("Skill berhasil dihapus!", "success");
+      fetchSkills();
+    } catch (err: any) {
+      showToast(`Gagal menghapus skill: ${err.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditSkillClick = (group: SkillGroup) => {
+    setSkillForm({
+      id: group.id?.toString() ?? "",
+      category: group.category,
+      emoji: group.emoji || "🚀",
+      skills: group.skills.join(", "),
+    });
+    setIsEditingSkill(true);
+    setShowSkillForm(true);
+  };
+
+  const resetSkillForm = () => {
+    setSkillForm({ id: "", category: "", emoji: "🚀", skills: "" });
+    setIsEditingSkill(false);
+  };
+
+  const moveSkillOrder = async (index: number, direction: "up" | "down") => {
+    if ((direction === "up" && index === 0) || (direction === "down" && index === skills.length - 1)) return;
+
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    const currentItem = skills[index];
+    const swapItem = skills[swapIndex];
+
+    try {
+      setLoading(true);
+      const currentOrder = currentItem.sortOrder || index;
+      const swapOrder = swapItem.sortOrder || swapIndex;
+
+      await Promise.all([
+        supabase.from("skill_groups").update({ sort_order: swapOrder }).eq("id", currentItem.id),
+        supabase.from("skill_groups").update({ sort_order: currentOrder }).eq("id", swapItem.id),
+      ]);
+
+      fetchSkills();
+    } catch (err: any) {
+      showToast(`Gagal memindahkan urutan skill: ${err.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Certifications handlers
@@ -562,11 +688,7 @@ export default function AdminDashboard() {
                   required
                   className="w-full pl-4 pr-10 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-950/50 text-slate-900 dark:text-slate-50 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none transition-all"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                >
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
@@ -614,11 +736,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="flex items-center gap-4">
-          <a
-            href="/"
-            target="_blank"
-            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors"
-          >
+          <a href="/" target="_blank" className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors">
             Lihat Portfolio <ExternalLink className="w-3.5 h-3.5" />
           </a>
           <button
@@ -637,9 +755,7 @@ export default function AdminDashboard() {
           <button
             onClick={() => setActiveTab("profile")}
             className={`flex items-center gap-2 px-5 py-3 border-b-2 font-bold text-sm transition-all ${
-              activeTab === "profile"
-                ? "border-sky-500 text-sky-500"
-                : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              activeTab === "profile" ? "border-sky-500 text-sky-500" : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
             <User className="w-4 h-4" /> Profil & Biodata
@@ -647,19 +763,23 @@ export default function AdminDashboard() {
           <button
             onClick={() => setActiveTab("projects")}
             className={`flex items-center gap-2 px-5 py-3 border-b-2 font-bold text-sm transition-all ${
-              activeTab === "projects"
-                ? "border-sky-500 text-sky-500"
-                : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              activeTab === "projects" ? "border-sky-500 text-sky-500" : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
             <Folder className="w-4 h-4" /> Kelola Proyek
           </button>
           <button
+            onClick={() => setActiveTab("skills")}
+            className={`flex items-center gap-2 px-5 py-3 border-b-2 font-bold text-sm transition-all ${
+              activeTab === "skills" ? "border-sky-500 text-sky-500" : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            }`}
+          >
+            <Sparkles className="w-4 h-4" /> Skill
+          </button>
+          <button
             onClick={() => setActiveTab("certifications")}
             className={`flex items-center gap-2 px-5 py-3 border-b-2 font-bold text-sm transition-all ${
-              activeTab === "certifications"
-                ? "border-sky-500 text-sky-500"
-                : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              activeTab === "certifications" ? "border-sky-500 text-sky-500" : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
             <Award className="w-4 h-4" /> Sertifikasi
@@ -667,17 +787,11 @@ export default function AdminDashboard() {
           <button
             onClick={() => setActiveTab("messages")}
             className={`flex items-center gap-2 px-5 py-3 border-b-2 font-bold text-sm transition-all ${
-              activeTab === "messages"
-                ? "border-sky-500 text-sky-500"
-                : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              activeTab === "messages" ? "border-sky-500 text-sky-500" : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
             <MessageSquare className="w-4 h-4" /> Pesan Masuk
-            {messages.length > 0 && (
-              <span className="ml-1 px-2 py-0.5 rounded-full bg-sky-500 text-white text-[10px]">
-                {messages.length}
-              </span>
-            )}
+            {messages.length > 0 && <span className="ml-1 px-2 py-0.5 rounded-full bg-sky-500 text-white text-[10px]">{messages.length}</span>}
           </button>
         </div>
 
@@ -685,10 +799,8 @@ export default function AdminDashboard() {
         {activeTab === "profile" && (
           <form onSubmit={saveProfile} className="space-y-6">
             <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-6 shadow-sm space-y-6">
-              <h3 className="font-quicksand text-xl font-bold flex items-center gap-2 text-sky-500">
-                👤 Edit Biografi Utama
-              </h3>
-              
+              <h3 className="font-quicksand text-xl font-bold flex items-center gap-2 text-sky-500">👤 Edit Biografi Utama</h3>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Nama Lengkap</label>
@@ -739,9 +851,7 @@ export default function AdminDashboard() {
 
             {/* ASSET UPLOADER SECTION */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-6 shadow-sm space-y-6">
-              <h3 className="font-quicksand text-xl font-bold flex items-center gap-2 text-sky-500">
-                📁 Berkas & Foto Profil
-              </h3>
+              <h3 className="font-quicksand text-xl font-bold flex items-center gap-2 text-sky-500">📁 Berkas & Foto Profil</h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Avatar Uploader */}
@@ -751,21 +861,10 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-4">
                       {/* Avatar preview */}
                       <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-850 flex-shrink-0 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
-                        {avatarUrl ? (
-                          <img src={avatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-2xl select-none">👨‍💻</span>
-                        )}
+                        {avatarUrl ? <img src={avatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" /> : <span className="text-2xl select-none">👨‍💻</span>}
                       </div>
                       <div className="relative flex-1">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          id="avatar-file"
-                          onChange={(e) => uploadFile(e, "avatar")}
-                          className="hidden"
-                          disabled={uploadingAvatar}
-                        />
+                        <input type="file" accept="image/*" id="avatar-file" onChange={(e) => uploadFile(e, "avatar")} className="hidden" disabled={uploadingAvatar} />
                         <label
                           htmlFor="avatar-file"
                           className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-sky-500 text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950 transition-all font-semibold text-sm"
@@ -803,14 +902,7 @@ export default function AdminDashboard() {
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Dokumen CV (PDF)</label>
                     <div className="relative">
-                      <input
-                        type="file"
-                        accept=".pdf"
-                        id="cv-file"
-                        onChange={(e) => uploadFile(e, "cv")}
-                        className="hidden"
-                        disabled={uploadingCv}
-                      />
+                      <input type="file" accept=".pdf" id="cv-file" onChange={(e) => uploadFile(e, "cv")} className="hidden" disabled={uploadingCv} />
                       <label
                         htmlFor="cv-file"
                         className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-sky-500 text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950 transition-all font-semibold text-sm"
@@ -889,9 +981,7 @@ export default function AdminDashboard() {
             {/* Project Form Container */}
             {showProjectForm && (
               <form onSubmit={saveProject} className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-6 shadow-sm space-y-6">
-                <h3 className="font-quicksand text-xl font-bold flex items-center gap-2 text-sky-500">
-                  📂 {isEditingProject ? "Edit Proyek" : "Buat Proyek Baru"}
-                </h3>
+                <h3 className="font-quicksand text-xl font-bold flex items-center gap-2 text-sky-500">📂 {isEditingProject ? "Edit Proyek" : "Buat Proyek Baru"}</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1">
@@ -1002,11 +1092,7 @@ export default function AdminDashboard() {
                   >
                     Batal
                   </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-bold shadow-md transition-all disabled:opacity-50"
-                  >
+                  <button type="submit" disabled={loading} className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-bold shadow-md transition-all disabled:opacity-50">
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...
@@ -1024,18 +1110,13 @@ export default function AdminDashboard() {
             {/* Projects Grid List */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {projects.map((proj) => (
-                <div
-                  key={proj.id}
-                  className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm flex items-start gap-4 hover:shadow-md transition-all"
-                >
-                  <div className={`w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-2xl bg-gradient-to-br ${proj.gradientFrom} ${proj.gradientTo} text-white shadow-md`}>
-                    {proj.emoji}
-                  </div>
-                  
+                <div key={proj.id} className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm flex items-start gap-4 hover:shadow-md transition-all">
+                  <div className={`w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-2xl bg-gradient-to-br ${proj.gradientFrom} ${proj.gradientTo} text-white shadow-md`}>{proj.emoji}</div>
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <h4 className="font-quicksand font-bold text-base truncate">{proj.title}</h4>
-                      
+
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => moveOrder("projects", projects.indexOf(proj), "up")}
@@ -1053,25 +1134,17 @@ export default function AdminDashboard() {
                         >
                           <ChevronDown className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => handleEditProjectClick(proj)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-colors"
-                          title="Edit Proyek"
-                        >
+                        <button onClick={() => handleEditProjectClick(proj)} className="p-1.5 rounded-lg text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-colors" title="Edit Proyek">
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
-                        <button
-                          onClick={() => deleteProject(proj.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
-                          title="Hapus Proyek"
-                        >
+                        <button onClick={() => deleteProject(proj.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors" title="Hapus Proyek">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
-                    
+
                     <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-1 font-inter">{proj.description}</p>
-                    
+
                     <div className="flex flex-wrap gap-1 mt-3">
                       {proj.tags.map((t) => (
                         <span key={t} className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-850 text-slate-600 dark:text-slate-400 text-[10px] font-semibold uppercase">
@@ -1090,6 +1163,137 @@ export default function AdminDashboard() {
                   <p className="text-xs">Klik 'Proyek Baru' untuk mulai menambahkan proyek!</p>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* SKILLS TAB */}
+        {activeTab === "skills" && (
+          <div className="space-y-6">
+            {!showSkillForm && (
+              <div className="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm">
+                <div>
+                  <h3 className="font-quicksand font-bold text-lg">Kelola Skill</h3>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">Grup skill yang ditampilkan di halaman utama.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    resetSkillForm();
+                    setShowSkillForm(true);
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-bold shadow-md hover:shadow-sky-500/20 transition-all hover:scale-105"
+                >
+                  <Plus className="w-4 h-4" /> Skill Baru
+                </button>
+              </div>
+            )}
+
+            {showSkillForm && (
+              <form onSubmit={saveSkill} className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-6 shadow-sm space-y-6">
+                <h3 className="font-quicksand text-xl font-bold flex items-center gap-2 text-sky-500">
+                  ✨ {isEditingSkill ? "Edit Skill" : "Buat Skill Baru"}
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Kategori</label>
+                    <input
+                      type="text"
+                      value={skillForm.category}
+                      onChange={(e) => setSkillForm({ ...skillForm, category: e.target.value })}
+                      required
+                      placeholder="Frontend"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-slate-900 dark:text-slate-50 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Emoji</label>
+                    <input
+                      type="text"
+                      value={skillForm.emoji}
+                      onChange={(e) => setSkillForm({ ...skillForm, emoji: e.target.value })}
+                      placeholder="🚀"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-slate-900 dark:text-slate-50 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Skill (pisahkan dengan koma)</label>
+                  <textarea
+                    value={skillForm.skills}
+                    onChange={(e) => setSkillForm({ ...skillForm, skills: e.target.value })}
+                    required
+                    rows={4}
+                    placeholder="Next.js, React, TypeScript, Tailwind CSS"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-slate-900 dark:text-slate-50 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSkillForm(false);
+                      resetSkillForm();
+                    }}
+                    className="px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                  >
+                    Batal
+                  </button>
+                  <button type="submit" disabled={loading} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold shadow-lg shadow-sky-500/20 hover:shadow-sky-500/35 transition-all disabled:opacity-50">
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    {isEditingSkill ? "Update Skill" : "Simpan Skill"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {skills.map((group, index) => (
+                <div key={group.id ?? group.category} className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{group.emoji || "🚀"}</span>
+                      <div>
+                        <h4 className="font-quicksand font-bold text-lg">{group.category}</h4>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">{group.skills.length} skill</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => moveSkillOrder(index, "up")}
+                        disabled={index === 0}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-colors disabled:opacity-30"
+                        title="Pindah ke Atas"
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => moveSkillOrder(index, "down")}
+                        disabled={index === skills.length - 1}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-colors disabled:opacity-30"
+                        title="Pindah ke Bawah"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleEditSkillClick(group)} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-sky-500/10 hover:text-sky-500 transition-all" title="Edit">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => deleteSkill(group.id ?? 0)} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-rose-500/10 hover:text-rose-500 transition-all" title="Hapus">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {group.skills.map((skill) => (
+                      <span key={`${group.id}-${skill}`} className="inline-flex items-center px-2.5 py-1 rounded-full border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 text-xs font-semibold">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -1173,19 +1377,20 @@ export default function AdminDashboard() {
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Unggah File (PDF/Gambar)</label>
                       <div className="relative">
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          id="cert-file"
-                          onChange={(e) => uploadFile(e, "cert")}
-                          className="hidden"
-                          disabled={uploadingCert}
-                        />
+                        <input type="file" accept="image/*,.pdf" id="cert-file" onChange={(e) => uploadFile(e, "cert")} className="hidden" disabled={uploadingCert} />
                         <label
                           htmlFor="cert-file"
                           className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-amber-500 text-slate-500 cursor-pointer transition-all font-semibold text-sm"
                         >
-                          {uploadingCert ? <><Loader2 className="w-4 h-4 animate-spin" /> Mengunggah...</> : <><Upload className="w-4 h-4" /> Pilih File Sertifikat</>}
+                          {uploadingCert ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" /> Mengunggah...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4" /> Pilih File Sertifikat
+                            </>
+                          )}
                         </label>
                       </div>
                     </div>
@@ -1200,7 +1405,7 @@ export default function AdminDashboard() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Link Artikel (Opsional)</label>
                     <input
@@ -1214,7 +1419,16 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex gap-4 justify-end">
-                  <button type="button" onClick={() => { resetCertForm(); setShowCertForm(false); }} className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 font-bold transition-all text-sm">Batal</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetCertForm();
+                      setShowCertForm(false);
+                    }}
+                    className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 font-bold transition-all text-sm"
+                  >
+                    Batal
+                  </button>
                   <button type="submit" disabled={loading} className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold transition-all disabled:opacity-50 text-sm">
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Simpan
                   </button>
@@ -1232,13 +1446,33 @@ export default function AdminDashboard() {
                     <div className="flex items-center justify-between gap-2">
                       <h4 className="font-quicksand font-bold text-base truncate">{cert.name}</h4>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => moveOrder("certifications", certifications.indexOf(cert), "up")} disabled={certifications.indexOf(cert) === 0} className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 transition-colors disabled:opacity-30" title="Pindah ke Atas"><ChevronUp className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => moveOrder("certifications", certifications.indexOf(cert), "down")} disabled={certifications.indexOf(cert) === certifications.length - 1} className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 transition-colors disabled:opacity-30" title="Pindah ke Bawah"><ChevronDown className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => handleEditCertClick(cert)} className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 transition-colors"><Edit2 className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => deleteCert(cert.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button
+                          onClick={() => moveOrder("certifications", certifications.indexOf(cert), "up")}
+                          disabled={certifications.indexOf(cert) === 0}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 transition-colors disabled:opacity-30"
+                          title="Pindah ke Atas"
+                        >
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => moveOrder("certifications", certifications.indexOf(cert), "down")}
+                          disabled={certifications.indexOf(cert) === certifications.length - 1}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 transition-colors disabled:opacity-30"
+                          title="Pindah ke Bawah"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleEditCertClick(cert)} className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 transition-colors">
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => deleteCert(cert.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">{cert.institution} • {cert.date}</p>
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
+                      {cert.institution} • {cert.date}
+                    </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-2">{cert.description}</p>
                   </div>
                 </div>
@@ -1272,13 +1506,17 @@ export default function AdminDashboard() {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex flex-col">
                         <h4 className="font-quicksand font-bold text-base truncate">{msg.name}</h4>
-                        <a href={`mailto:${msg.email}`} className="text-xs font-semibold text-sky-500 dark:text-sky-400 mt-0.5 truncate flex items-center gap-1"><Mail className="w-3 h-3" /> {msg.email}</a>
+                        <a href={`mailto:${msg.email}`} className="text-xs font-semibold text-sky-500 dark:text-sky-400 mt-0.5 truncate flex items-center gap-1">
+                          <Mail className="w-3 h-3" /> {msg.email}
+                        </a>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => deleteMessage(msg.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors" title="Hapus Pesan"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => deleteMessage(msg.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors" title="Hapus Pesan">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                    <p className="text-xs font-semibold text-slate-400 mt-2">{new Date(msg.created_at).toLocaleString('id-ID')}</p>
+                    <p className="text-xs font-semibold text-slate-400 mt-2">{new Date(msg.created_at).toLocaleString("id-ID")}</p>
                     <p className="text-sm text-slate-700 dark:text-slate-300 mt-2 whitespace-pre-wrap bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800">{msg.message}</p>
                   </div>
                 </div>
